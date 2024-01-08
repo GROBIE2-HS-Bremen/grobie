@@ -23,10 +23,10 @@ class E220NetworkController(INetworkController):
                     and not dir_val.startswith("__")
                 ]:
 
+                print(f'setting {cnf_key} to {getattr(cfg, cnf_key)}')
                 setattr(self.e220, cnf_key, getattr(cfg, cnf_key))
 
-        self.e220.set
-
+        self.e220.save()
         self.e220.set_mode(MODE_NORMAL)
 
     async def _start(self):
