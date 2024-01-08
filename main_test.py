@@ -14,17 +14,25 @@ import asyncio
 
 ##### CONNECT SENSORS #####
 i2c = I2C(1, scl=Pin(3), sda=Pin(2), freq=400000)
-# dynamicaly construct storage controller and sensors. 
+# dynamicaly construct storage controller and sensors.
 # by doibng it this way not all nodes need to have the same sensors or storage
-sc = StorageControllerFactory.get_controller(mosi=Pin(7), miso=Pin(0), sck=Pin(6), cs=Pin(1, Pin.OUT))
+sc = StorageControllerFactory.get_controller(
+    mosi=Pin(7), miso=Pin(0), sck=Pin(6), cs=Pin(1, Pin.OUT))
 sensors = I2CSensorFactory.create_sensors(i2c)
 
 ##### INITIALIZE NETWORK #####
 uart = UART(1, baudrate=9600, rx=Pin(5), tx=Pin(4))
-# we will create the same network controller for all nodes as they need to connect to the same network 
+# we will create the same network controller for all nodes as they need to connect to the same network
 m0 = Pin(26, Pin.OUT)
 m1 = Pin(15, Pin.OUT)
-nc = E220NetworkController(E220(uart=uart, m0=m0, m1=m1), set_config=False) 
+nc = E220NetworkController(E220(uart=uart, m0=m0, m1=m1), set_config=False)
+
+# Config
+node_config = NodeConfigData(
+    addr=nc.address,
+    measurement_interval=1,
+    replication_count=4
+)
 
 ##### START NODE #####
 # start event loop and run forever
@@ -33,12 +41,8 @@ node = Node(
     sensors=sensors,
     storage_controller=sc,
     network_controller=nc,  # use e220 as network controller
-    node_config=NodeConfigData(
-        addr=nc.address,
-        measurement_interval=1,
-        replication_count=4
-    ),
-    neighbours_controller=NeighboursController(),
+    node_config=node_config,
+    neighbours_controller=NeighboursController(node_config, nc),
 )
 
 loop.run_forever()
