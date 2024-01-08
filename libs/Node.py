@@ -1,5 +1,5 @@
 from libs.controllers.config import ConfigController, NodeConfigData
-from libs.controllers.database.BinaryKV.Bsv import BsvDatabase
+from libs.controllers.database.BinaryKV import BinarKVDatabase
 from libs.controllers.measurement import MeasurementController
 from libs.controllers.measurement.Measurement import Measurement
 from libs.controllers.network import INetworkController
@@ -39,7 +39,7 @@ class Node():
         self.replication_controller = ReplicationController(self.config_controller)
         
         filepath = '/sd/data.db'
-        self.database_controller = BsvDatabase(filepath, self.storage_controller)
+        self.database_controller = BinarKVDatabase(filepath, self.storage_controller)
         
 
         # Register message callbacks
@@ -56,7 +56,7 @@ class Node():
 
 
         # make and send measuremnt every 1 second
-        # self.measurement_controller.start()
+        self.measurement_controller.start()
         self.network_controller.start()
         print('node has been initialized, controllers started')
 
