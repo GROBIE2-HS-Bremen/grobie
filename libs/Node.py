@@ -7,6 +7,7 @@ from libs.controllers.network.E220NetworkController import Frame
 from libs.controllers.replication import ReplicationController
 from libs.sensors import ISensor
 from libs.controllers.storage import IStorageController
+from libs.controllers.neighbours.NeighboursController import NeighboursController
 
 
 class Node():
@@ -15,11 +16,13 @@ class Node():
                  sensors: list[ISensor],
                  storage_controller: IStorageController,
                  network_controller: INetworkController,
-                 node_config: NodeConfigData) -> None:
+                 node_config: NodeConfigData,
+                 neighbours_controller: NeighboursController) -> None:
 
         self.sensors = sensors
         self.storage_controller = storage_controller
         self.network_controller = network_controller
+        self.neighbours_controller = neighbours_controller
 
         self.init_storage()
 
@@ -53,6 +56,12 @@ class Node():
                                                   self.config_controller.handle_message)  # handle config changes
         self.network_controller.register_callback(Frame.FRAME_TYPES['replication'],
                                                   self.replication_controller.handle_bid)  # handle replication changes
+        self.network_controller.register_callback(Frame.FRAME_TYPES['node_joining'],
+                                                  self.neighbours_controller.handle_join)
+        self.network_controller.register_callback(Frame.FRAME_TYPES['node_leaving'],
+                                                  self.neighbours_controller.handle_leave)
+        self.network_controller.register_callback(Frame.FRAME_TYPES['node_alive'],
+                                                  self.neighbours_controller.handle_alive)
 
         print(self.network_controller.callbacks)
 

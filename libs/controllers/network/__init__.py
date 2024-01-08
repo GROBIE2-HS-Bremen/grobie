@@ -6,7 +6,10 @@ class Frame:
         'discovery': 0x00,
         'measurment': 0x01,
         'config': 0x02,
-        'replication': 0x03
+        'replication': 0x03,
+        'node_joining': 0x06,
+        'node_leaving': 0x07,
+        'node_alive': 0x08,
     }
 
     def __init__(self, type: int, message: bytes, source_address: int, destination_address: int, ttl=20):
@@ -73,8 +76,10 @@ class INetworkController:
         frame = Frame.deserialize(message)
 
         # get all the callback functions
-        callbacks = self.callbacks.get(-1, [])  # get the callbacks for the wildcard
-        callbacks += self.callbacks.get(frame.type, [])  # get the callbacks for the specific type
+        # get the callbacks for the wildcard
+        callbacks = self.callbacks.get(-1, [])
+        # get the callbacks for the specific type
+        callbacks += self.callbacks.get(frame.type, [])
 
         # call all the callbacks
         for callback in callbacks:
