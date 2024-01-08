@@ -6,13 +6,27 @@ from libs.controllers.network import Frame, INetworkController
 class E220NetworkController(INetworkController):
     callbacks: dict[int, list] = {}
 
-    def __init__(self, e220: E220):
+    def __init__(self, e220: E220, set_config=False):
         super().__init__()
 
         self.e220 = e220
 
         self.e220.set_mode(MODE_CONFIG)
         self.e220.get_settings()
+
+        if set_config: 
+            import config as cfg
+
+            for cnf_key in [
+                dir_val for dir_val in dir(cfg) 
+                    if not callable(getattr(cfg, dir_val)) 
+                    and not dir_val.startswith("__")
+                ]:
+
+                print(f'setting {cnf_key} to {getattr(cfg, cnf_key)}')
+                setattr(self.e220, cnf_key, getattr(cfg, cnf_key))
+
+        self.e220.save()
         self.e220.set_mode(MODE_NORMAL)
 
     async def _start(self):
