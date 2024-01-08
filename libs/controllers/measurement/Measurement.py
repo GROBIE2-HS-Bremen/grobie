@@ -1,9 +1,9 @@
-import libs.external.umsgpack  as umsgpack
+import libs.external.umsgpack as umsgpack
 
 import math
 
-class Measurement: 
 
+class Measurement:
     data: dict[str, float | int]
     timestamp: int
 
@@ -20,8 +20,7 @@ class Measurement:
         """ decode data from bytes """
         return Measurement(**umsgpack.loads(bits))
 
-
-    def __str__(self): 
+    def __str__(self):
         # convert to csv
         return ",".join([str(value) for value in self.data.values()])
 

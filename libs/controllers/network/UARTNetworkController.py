@@ -3,13 +3,12 @@ from machine import UART
 from libs.controllers.network import INetworkController
 
 
-class UARTNetworkController(INetworkController): 
+class UARTNetworkController(INetworkController):
 
-    def __init__(self, uart: UART): 
+    def __init__(self, uart: UART):
         super().__init__()
         self.uart = uart
         self.callbacks = {}
-
 
     async def _start(self):
         while True:
@@ -19,8 +18,3 @@ class UARTNetworkController(INetworkController):
 
     def send_message(self, type: int, message: bytes, addr=b'\xff\xff'):
         self.uart.write(message)
-
-
-
-
-        

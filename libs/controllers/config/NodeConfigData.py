@@ -1,5 +1,7 @@
 import libs.external.umsgpack as umsgpack
 from libs.helpers.dict import DiffChange, apply_diff, diff_dict
+
+
 # from libs.helpers.dict import apply_diff, diff_dict
 
 class NodeConfigData:
@@ -25,21 +27,20 @@ class NodeConfigData:
 
     # network config
     addr: int  # 2 bytes unsigned
-    
+
     # measuserument config 
-    measurement_interval: int # 6 bytes unsigned
+    measurement_interval: int  # 6 bytes unsigned
 
     # storage config
-    replications: dict[int, int] # 2 byte unsigned keys, 2 byte unsigned values
-    replication_count: int # 2 bytes unsigned
-    
+    replications: dict[int, int]  # 2 byte unsigned keys, 2 byte unsigned values
+    replication_count: int  # 2 bytes unsigned
 
-    def __init__(self, addr: int, measurement_interval: int, replication_count, replications=None, bidding_wait = 1) -> None:
+    def __init__(self, addr: int, measurement_interval: int, replication_count, replications=None,
+                 bidding_wait=1) -> None:
         self.addr = addr
         self.measurement_interval = measurement_interval
         self.replication_count = replication_count
         self.bidding_wait = bidding_wait
-
 
         if replications is None:
             replications = {}
@@ -54,7 +55,7 @@ class NodeConfigData:
             'replications': self.replications,
             'bidding_wait': self.bidding_wait
         })
-    
+
     @staticmethod
     def deserialize(bits):
         """ deserialize the node config """
@@ -93,19 +94,19 @@ class NodeConfigData:
 
     def __str__(self) -> str:
         return f'NodeConfigData(addr={self.addr}, measurement_interval={self.measurement_interval}, replication_count={self.replication_count}, replications={self.replications})'
-    
+
     def __repr__(self) -> str:
         return self.__str__()
-    
+
     def __eq__(self, o: object) -> bool:
         if not isinstance(o, NodeConfigData):
             return False
-        
+
         return self.__dict__ == o.__dict__
-    
+
     def __setitem__(self, key, value):
         setattr(self, key, value)
-    
+
     def __dict__(self) -> dict:
         return {
             'addr': self.addr,

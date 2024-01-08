@@ -6,8 +6,8 @@ import math
 
 import asyncio
 
-class ReplicationController: 
 
+class ReplicationController:
     bids: dict[int, int]
 
     def __init__(self, config_controller: ConfigController):
@@ -18,8 +18,8 @@ class ReplicationController:
     @property
     def replicating_nodes(self):
         """ get al the nodes we are replicating. """
-        return [k for k, v in self.config_controller.ledger.items() if self.config_controller.config.addr in v.replications]
-
+        return [k for k, v in self.config_controller.ledger.items() if
+                self.config_controller.config.addr in v.replications]
 
     def are_replicating(self, node_addr: int):
         """ 
@@ -34,9 +34,8 @@ class ReplicationController:
 
         # check if we are replicating this node
         return node_addr in self.replicating_nodes
-        
 
-    def should_replicate(self, node_addr: int) -> bool: 
+    def should_replicate(self, node_addr: int) -> bool:
         """ 
             check if we should replicate the data from this node 
         
@@ -49,13 +48,13 @@ class ReplicationController:
         # check if we are replicating this node
         if not self.are_replicating(node_addr):
             return False
-        
+
         # check if he wants new replications
-        if self.config_controller.ledger[node_addr].replication_count <= len(self.config_controller.ledger[node_addr].replications):
+        if self.config_controller.ledger[node_addr].replication_count <= len(
+                self.config_controller.ledger[node_addr].replications):
             return False
 
         return True
-    
 
     def handle_bid(self, frame: Frame):
         """ 
@@ -75,9 +74,9 @@ class ReplicationController:
         # check if we already have a bid for this node. if so ignore it.
         if frame.source_address in self.bids:
             return
-            
+
         # store the bid
-        self.bids[frame.source_address] = int.from_bytes(frame.data, 'big') # decode the ttl to an int
+        self.bids[frame.source_address] = int.from_bytes(frame.data, 'big')  # decode the ttl to an int
 
         # start a timer to wait for other bids. the lenght of this timer is in config
         if not self.waiting_for_bids:
@@ -85,10 +84,8 @@ class ReplicationController:
             loop = asyncio.get_event_loop()
             loop.create_task(self.decide_winners())
 
-
-
-
     waiting_for_bids = False
+
     async def decide_winners(self):
         """ 
             Decide which nodes will store the data.
@@ -126,5 +123,3 @@ class ReplicationController:
         # clear the list of bids and update the replicating nodes
         self.bids = {}
         self.config_controller.update_config('replications', winners)
-
-        

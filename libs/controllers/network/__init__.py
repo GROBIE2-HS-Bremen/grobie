@@ -1,6 +1,7 @@
 import asyncio
 
-class Frame: 
+
+class Frame:
     FRAME_TYPES = {
         'discovery': 0x00,
         'measurment': 0x01,
@@ -18,8 +19,8 @@ class Frame:
 
     def serialize(self) -> bytes:
         return b''.join([
-            self.type.to_bytes(1, 'big'), 
-            self.source_address.to_bytes(2, 'big'), 
+            self.type.to_bytes(1, 'big'),
+            self.source_address.to_bytes(2, 'big'),
             self.destination_address.to_bytes(2, 'big'),
             self.data
         ])
@@ -33,7 +34,8 @@ class Frame:
 
         return Frame(type, message, source_address, destination_address)
 
-class INetworkController: 
+
+class INetworkController:
     """ the abstract base class for all network controllers """
 
     task: asyncio.Task
@@ -41,7 +43,6 @@ class INetworkController:
 
     def __init__(self):
         self.callbacks = {}
-        
 
     def start(self):
         """ start the network controller """
@@ -75,14 +76,11 @@ class INetworkController:
         callbacks = self.callbacks.get(-1, [])  # get the callbacks for the wildcard
         callbacks += self.callbacks.get(frame.type, [])  # get the callbacks for the specific type
 
-
         # call all the callbacks
         for callback in callbacks:
             callback(frame)
-
 
     @property
     def address(self) -> int:
         """ the address of the node """
         return int.from_bytes(b'\x00\x00', 'big')
-

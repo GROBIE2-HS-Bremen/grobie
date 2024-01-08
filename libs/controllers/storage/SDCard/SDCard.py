@@ -23,7 +23,6 @@ Example usage on ESP8266:
 from micropython import const
 import time
 
-
 _CMD_TIMEOUT = const(100)
 
 _R1_IDLE_STATE = const(1 << 0)
@@ -110,11 +109,9 @@ class SDCard:
             self.sectors = (c_size + 1) * (2 ** (c_size_mult + 2))
         else:
             raise OSError("SD card CSD format not supported")
-        
 
         print('[SDCard] sectors: ', self.sectors)
         print('[SDCard] capacity: {} mb'.format(self.sectors / 2048))
-
 
         # CMD16: set block length to 512 bytes
         if self.cmd(16, 512, 0) != 0:
@@ -126,7 +123,6 @@ class SDCard:
         self.block_size = 512
         self.capacity = self.sectors * self.block_size
         self.sector_count = self.sectors
-
 
     def init_card_v1(self):
         for i in range(_CMD_TIMEOUT):
@@ -244,7 +240,6 @@ class SDCard:
 
     def readblocks(self, block_num, buf):
         nblocks = len(buf) // 512
-        print(nblocks, len(buf))
         assert nblocks and not len(buf) % 512, "Buffer length is invalid"
         if nblocks == 1:
             # CMD17: set read address for single block
@@ -264,7 +259,7 @@ class SDCard:
             mv = memoryview(buf)
             while nblocks:
                 # receive the data and release card
-                self.readinto(mv[offset : offset + 512])
+                self.readinto(mv[offset: offset + 512])
                 offset += 512
                 nblocks -= 1
             if self.cmd(12, 0, 0xFF, skip1=True):
@@ -272,7 +267,6 @@ class SDCard:
 
     def writeblocks(self, block_num, buf):
         nblocks, err = divmod(len(buf), 512)
-        print(nblocks, len(buf), err)
         assert nblocks and not err, "Buffer length is invalid"
         if nblocks == 1:
             # CMD24: set write address for single block
@@ -289,7 +283,7 @@ class SDCard:
             offset = 0
             mv = memoryview(buf)
             while nblocks:
-                self.write(_TOKEN_CMD25, mv[offset : offset + 512])
+                self.write(_TOKEN_CMD25, mv[offset: offset + 512])
                 offset += 512
                 nblocks -= 1
             self.write_token(_TOKEN_STOP_TRAN)

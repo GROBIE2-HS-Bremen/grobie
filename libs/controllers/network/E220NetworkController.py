@@ -1,16 +1,12 @@
-
-
 import asyncio
 from libs.E220 import E220, MODE_CONFIG, MODE_NORMAL
 from libs.controllers.network import Frame, INetworkController
 
 
-
-class E220NetworkController(INetworkController): 
-    
+class E220NetworkController(INetworkController):
     callbacks: dict[int, list] = {}
 
-    def __init__(self, e220: E220): 
+    def __init__(self, e220: E220):
         super().__init__()
 
         self.e220 = e220

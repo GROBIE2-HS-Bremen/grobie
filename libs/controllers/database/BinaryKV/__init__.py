@@ -4,6 +4,7 @@ from libs.controllers.storage.LocalStorage import LocalStorageController
 
 import libs.external.umsgpack as umsgpack
 
+
 class BinarKVDatabase(IDatabaseController):
     """ 
         store the data in a binary format. 
@@ -24,12 +25,10 @@ class BinarKVDatabase(IDatabaseController):
             - if compression is wanted the entire file needs to be insert or read measuremnts
     """
 
-
-
     def __init__(self, filename: str, storage_controller: IStorageController):
-        self.storage_controller = storage_controller 
+        self.storage_controller = storage_controller
         self.filename = filename
-        
+
         # ensure the file exists and open it
         self.storage_controller.ensure_exists(self.filename)
         self.handle = open(filename, 'wb')
@@ -55,12 +54,12 @@ class BinarKVDatabase(IDatabaseController):
             if ts == timestamp:
                 d = self.handle.read(int.from_bytes(line[0:4], 'big'))
                 return umsgpack.loads(d)
-            
+
             # move to the next line
             self.handle.seek(int.from_bytes(line[0:4], 'big'), 1)
 
         return None
-    
+
     def get_all(self):
         self.handle.seek(0)
         data = []
@@ -76,7 +75,7 @@ class BinarKVDatabase(IDatabaseController):
         return data
 
     # FIXME:: FIX THESE FUNCTIONS 
-    def get_all_between(self, start, end, inclusive = False):
+    def get_all_between(self, start, end, inclusive=False):
         """ FUNCTION WILL ONLY RETURN ERROR """
         self.handle.seek(0)
         data = []
@@ -89,18 +88,18 @@ class BinarKVDatabase(IDatabaseController):
             if ts > start and ts < end or (inclusive and (ts == start or ts == end)):
                 d = self.handle.read(int.from_bytes(line[0:4], 'big'))
                 data.append(umsgpack.loads(d))
-            
+
             else:
                 # move to the next line
                 self.handle.seek(int.from_bytes(line[0:4], 'big'), 1)
 
         return data
-    
-    def get_all_after(self, timestamp, inclusive = False):
+
+    def get_all_after(self, timestamp, inclusive=False):
         """ FUNCTION WILL ONLY RETURN ERROR """
         self.handle.seek(0)
         data = []
-        
+
         while True:
             line = self.handle.read(8)
             if not line:
@@ -111,17 +110,17 @@ class BinarKVDatabase(IDatabaseController):
                 d = self.handle.read(int.from_bytes(line[0:4], 'big'))
                 data.append(umsgpack.loads(d))
 
-            else: 
+            else:
                 # move to the next line
                 self.handle.seek(int.from_bytes(line[0:4], 'big'), 1)
 
         return data
 
-    def get_all_before(self, timestamp, inclusive = False):
+    def get_all_before(self, timestamp, inclusive=False):
         """ FUNCTION WILL ONLY RETURN ERROR """
         self.handle.seek(0)
         data = []
-        
+
         while True:
             line = self.handle.read(8)
             if not line:
@@ -131,13 +130,12 @@ class BinarKVDatabase(IDatabaseController):
             if ts < timestamp or (inclusive and ts == timestamp):
                 d = self.handle.read(int.from_bytes(line[0:4], 'big'))
                 data.append(umsgpack.loads(d))
-            
+
             else:
                 # move to the next line
                 self.handle.seek(int.from_bytes(line[0:4], 'big'), 1)
 
         return data
-
 
 
 if __name__ == '__main__':
@@ -157,8 +155,6 @@ if __name__ == '__main__':
     with open('test.csv', 'rb') as f:
         d = f.read()
 
-
-
     assert db.get(0) == [0, {'test': 0, 'foo': 0.2324}]
     assert db.get(9) == [9, {'test': 9, 'foo': 0.2324}]
     assert db.get(5) == [5, {'test': 5, 'foo': 0.2324}]
@@ -167,23 +163,24 @@ if __name__ == '__main__':
 
     assert db.get_all() == inserted_data
 
-
-    
-    assert db.get_all_between(3, 6, True) == [[3, {'test': 3, 'foo': 0.2324}], [4, {'test': 4, 'foo': 0.2324}], [5, {'test': 5, 'foo': 0.2324}], [6, {'test': 6, 'foo': 0.2324}]]
+    assert db.get_all_between(3, 6, True) == [[3, {'test': 3, 'foo': 0.2324}], [4, {'test': 4, 'foo': 0.2324}],
+                                              [5, {'test': 5, 'foo': 0.2324}], [6, {'test': 6, 'foo': 0.2324}]]
     assert db.get_all_between(3, 3, True) == [[3, {'test': 3, 'foo': 0.2324}]]
     assert db.get_all_between(3, 3) == []
     assert db.get_all_between(3, 2) == []
 
     assert db.get_all_after(0, True) == inserted_data
     assert db.get_all_after(9, True) == [[9, {'test': 9, 'foo': 0.2324}]]
-    assert db.get_all_after(5) == [[6, {'test': 6, 'foo': 0.2324}], [7, {'test': 7, 'foo': 0.2324}], [8, {'test': 8, 'foo': 0.2324}], [9, {'test': 9, 'foo': 0.2324}]]
+    assert db.get_all_after(5) == [[6, {'test': 6, 'foo': 0.2324}], [7, {'test': 7, 'foo': 0.2324}],
+                                   [8, {'test': 8, 'foo': 0.2324}], [9, {'test': 9, 'foo': 0.2324}]]
     assert db.get_all_after(10) == []
 
     assert db.get_all_before(0, True) == [[0, {'test': 0, 'foo': 0.2324}]]
     assert db.get_all_before(9, True) == inserted_data
-    assert db.get_all_before(5) == [[0, {'test': 0, 'foo': 0.2324}], [1, {'test': 1, 'foo': 0.2324}], [2, {'test': 2, 'foo': 0.2324}], [3, {'test': 3, 'foo': 0.2324}], [4, {'test': 4, 'foo': 0.2324}]]
+    assert db.get_all_before(5) == [[0, {'test': 0, 'foo': 0.2324}], [1, {'test': 1, 'foo': 0.2324}],
+                                    [2, {'test': 2, 'foo': 0.2324}], [3, {'test': 3, 'foo': 0.2324}],
+                                    [4, {'test': 4, 'foo': 0.2324}]]
     assert db.get_all_before(0) == []
     assert db.get_all_before(10) == inserted_data
 
     print('all tests passed')
-

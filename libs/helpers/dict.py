@@ -101,7 +101,7 @@ def apply_diff(a: dict, diff: dict, apply=False) -> dict:
                 del b[key]
             else:
                 # throws strange error when using __dict__ of NodeConfigData, TypeError without message.
-                b[key] = value[1] 
+                b[key] = value[1]
 
         elif isinstance(value, list):
             if value[0] == DiffChange.REMOVED:
@@ -117,9 +117,12 @@ def apply_diff(a: dict, diff: dict, apply=False) -> dict:
 
 
 import libs.external.umsgpack as umsgpack
-def serialize_dict(d): 
+
+
+def serialize_dict(d):
     """ serialize a dict to bytes """
     return umsgpack.dumps(d)
+
 
 def deserialize_dict(d):
     """ deserialize a dict from bytes """

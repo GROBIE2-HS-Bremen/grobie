@@ -61,6 +61,7 @@ WOR_CYCLE = {
     0x07: 4000,
 }
 
+
 class E220:
     def __init__(self, uart: UART, m0: Pin, m1: Pin) -> None:
         self.serial = uart
@@ -182,7 +183,9 @@ WOR Cycle:                  {self.wor_cycle}ms"""
 
         reg02 = baud_rate[0] | serial_parity_bit[0] | air_rate[-1]
         reg03 = sub_packet[0] | (0x20 if self.rssi_ambient_noice_enable else 0x00) | transmit_power[0]
-        reg05 = (0x80 if self.rssi_enabled else 0x00) | (0x40 if self.transmission_method else 0x00) | (0x10 if self.lbt_enabled else 0x00) | wor_cycle[0]
+        reg05 = (0x80 if self.rssi_enabled else 0x00) | (0x40 if self.transmission_method else 0x00) | (
+            0x10 if self.lbt_enabled else 0x00) | wor_cycle[0]
 
-        self.write(b''.join([header, self.address, reg02.to_bytes(1, 'little'), reg03.to_bytes(1, 'little'), self.channel.to_bytes(1, 'little'), reg05.to_bytes(1, 'little')]))
+        self.write(b''.join([header, self.address, reg02.to_bytes(1, 'little'), reg03.to_bytes(1, 'little'),
+                             self.channel.to_bytes(1, 'little'), reg05.to_bytes(1, 'little')]))
         self.read()

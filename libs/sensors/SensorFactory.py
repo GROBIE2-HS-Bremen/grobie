@@ -3,8 +3,8 @@ from libs.sensors.BME280 import BME280
 from machine import I2C
 
 
-class I2CSensorFactory: 
-    
+class I2CSensorFactory:
+
     @staticmethod
     def create_sensors(i2c: I2C):
         # find and create sensors based on the found addresses
@@ -13,7 +13,7 @@ class I2CSensorFactory:
     @staticmethod
     def create_sensor(addr, i2c: I2C):
         sens = None
-        
+
         # check if addr is a string or int. if string, get sensor from name, else get sensor from addr
         if isinstance(addr, str):
             sens = I2CSensorFactory.getSensorFromName(addr)
@@ -28,7 +28,7 @@ class I2CSensorFactory:
             0x23: BH1750,
             0x76: BME280,
         }[addr]
-    
+
     @staticmethod
     def getSensorFromName(name):
         return {

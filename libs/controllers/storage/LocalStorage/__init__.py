@@ -1,8 +1,7 @@
-
 from libs.controllers.storage import IStorageController
 
 
-class LocalStorageController(IStorageController): 
+class LocalStorageController(IStorageController):
 
     def __init__(self) -> None:
         pass

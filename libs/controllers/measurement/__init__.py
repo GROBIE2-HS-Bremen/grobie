@@ -1,10 +1,9 @@
-
 from libs.controllers.measurement.Measurement import Measurement
 from libs.sensors import ISensor
 import asyncio
 
 
-class MeasurementController: 
+class MeasurementController:
 
     def __init__(self, sensors: list[ISensor], actions: list) -> None:
         self.sensors = sensors
@@ -16,7 +15,7 @@ class MeasurementController:
 
     def stop(self):
         self.t.cancel()
-        
+
     async def _start(self, period: int = 1000):
         while True:
             await asyncio.sleep(period / 1000)
@@ -26,13 +25,14 @@ class MeasurementController:
         data = {}
         for sensor in self.sensors:
             data.update(sensor.get_measurement())
-        
-        measurement = Measurement()
+
+        measurement = Measurement(
+            timestamp=0,
+            data=data
+        )
         measurement.data = data
 
         for action in self.actions:
             action(measurement)
 
         return measurement
-
-    

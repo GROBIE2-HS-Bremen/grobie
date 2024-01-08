@@ -1,19 +1,17 @@
 from libs.controllers.config import NodeConfigData
 
 
-class Ledger: 
-
+class Ledger:
     ledger: dict[int, NodeConfigData]
 
-    def __init__(self, ledger = None) -> None:
+    def __init__(self, ledger=None) -> None:
         if ledger is None:
             ledger = {}
         self.ledger = ledger
 
-
     def get_node_config(self, addr):
         return self.ledger[addr]
-    
+
     def __getitem__(self, addr):
         return self.ledger[addr]
 
@@ -30,12 +28,12 @@ class Ledger:
 
     def __iter__(self):
         return iter(self.ledger)
-    
+
     def __len__(self):
         return len(self.ledger)
-    
+
     def __contains__(self, addr):
         return addr in self.ledger
-    
+
     def items(self):
         return self.ledger.items()
