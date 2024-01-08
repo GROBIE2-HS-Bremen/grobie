@@ -39,37 +39,4 @@ node = Node(
     )
 )
 
-import time
-
-# secondConfig
-cnf = NodeConfigData(
-    addr=2,
-    measurement_interval=1,
-    replication_count=0
-)
-
-# send discovery frame
-frame = Frame(Frame.FRAME_TYPES['discovery'], cnf.serialize(), 1, 255)
-node.network_controller.on_message(frame.serialize())
-
-time.sleep(1)
-print(node.config_controller.ledger.items())
-time.sleep(1)
-
-# send replication bid
-frame = Frame(Frame.FRAME_TYPES['replication'], b'\x01', 2, 4)
-node.network_controller.on_message(frame.serialize())
-
-
-async def a():
-    await asyncio.sleep(3)
-    print(node.config_controller.config.replications)
-    await asyncio.sleep(3)
-
-    loop.stop()
-
-
-loop.create_task(a())
-
-# loop
 loop.run_forever()
