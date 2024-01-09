@@ -87,6 +87,7 @@ class NetworkHandlerV1():
         Very simple Stop-And-Wait protocol for sending data
 
         """
+        lock = asyncio.Lock()
         # Only add sequence number on measurement packets
         if type == 0x01 and rbt:
             async with lock:
