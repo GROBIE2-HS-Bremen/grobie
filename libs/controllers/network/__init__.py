@@ -18,7 +18,7 @@ class Frame:
         self.destination_address = destination_address
         self.ttl = ttl
         self.seq = seq
-        self.reqnr = seq
+        self.reqnr = reqnr
         self.data = message
 
     def serialize(self) -> bytes:
@@ -69,17 +69,21 @@ class INetworkController:
             d = self.e220.read()
             if d:
                 self.on_message(d)
+                
             await asyncio.sleep(0.1)
 
     def stop(self):
         """ stop the network controller """
         self.task.cancel()
 
-    def send_message(self, type: int, message: bytes, addr=255,source_address,destination_address,ttl):
+    def send_message(self, type: int, source_address,destination_address,ttl, message: bytes, addr=255):
         """ send a message to the specified address """
+        if len(message) <= 188:
+            # boolean True if simple stop-and-wait reliable protocol needs to be used. Else False
+            self.network.transmit_packet(message,type,addr,source_address,destination_address,ttl,True)
+        else:
 
-        # boolean True if simple stop-and-wait reliable protocol needs to be used. Else False
-        self.network.transmit_packet(message,type,addr,source_address,destination_address,ttl,True)
+
 
         
     def register_callback(self, type: int, callback):
