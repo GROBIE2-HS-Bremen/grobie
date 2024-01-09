@@ -77,11 +77,11 @@ class INetworkController:
         self.task.cancel()
 
     def send_message(self, type: int, source_address,destination_address,ttl, message: bytes, addr=255):
-        """ send a message to the specified address """
-        if len(message) <= 188:
-            # boolean True if simple stop-and-wait reliable protocol needs to be used. Else False
-            self.network.transmit_packet(message,type,addr,source_address,destination_address,ttl,True)
-        else:
+        """ send a message to the specified address TODO split into multiple messages..."""
+  
+        # boolean True if simple stop-and-wait reliable protocol needs to be used. Else False
+        self.network.transmit_packet(message,type,addr,source_address,destination_address,ttl,True)
+
 
 
 
