@@ -2,14 +2,22 @@ from libs.Node import Frame
 from libs.controllers.config.NodeConfigData import NodeConfigData
 from libs.controllers.network import Frame, INetworkController
 from utime import time
+import asyncio
 
 
 class NeighboursController():
-    def __init__(self, node_config: NodeConfigData, network: INetworkController) -> None:
+    def __init__(self, node_config: NodeConfigData, network: INetworkController, heartbeat: int = 120, max_timeout: int = 380) -> None:
+        """
+        heartbeat: aprox time in seconds between sending a "i am alive" message.
+        max_timeout: max time in seconds waiting before deleting the node from the connection table.
+        """
         self.node_config = node_config
         self.network = network
         self.connections: dict[int, NodeConfigData] = {}
         self.last_update: dict[int, int] = {}
+
+        self.max_timeout = max_timeout
+        self.heartbeat = heartbeat
 
     def broadcast_join(self):
         """
@@ -18,12 +26,30 @@ class NeighboursController():
         self.network.send_message(
             Frame.FRAME_TYPES['node_joining'], self.node_config.serialize())
 
+    def start(self):
+        loop = asyncio.get_event_loop()
+        loop.create_task(self.broadcast_alive_loop())
+        loop.create_task(self.nodes_alive_loop())
+
+    async def broadcast_alive_loop(self):
+        while True:
+            await asyncio.sleep(self.heartbeat)
+            self.network.send_message(
+                Frame.FRAME_TYPES['node_alive'], self.node_config.serialize())
+
+    async def nodes_alive_loop(self):
+        while True:
+            await asyncio.sleep(self.max_timeout)
+            for node in self.connections:
+                if node not in self.last_update or self.last_update[node] + self.max_timeout > time():
+                    self.last_update.pop(node)
+                    self.connections.pop(node)
+
     def handle_join(self, frame: Frame):
         """
         Handles when a node joins the network, assumes that the data of frame
         contains the config of the joining node. Sends back their own config.
         """
-
         if frame.type != Frame.FRAME_TYPES['node_joining']:
             return
 
@@ -42,8 +68,9 @@ class NeighboursController():
         if frame.type != Frame.FRAME_TYPES['node_leaving']:
             return
 
-        id = frame.data
-        self.connections.pop(int.from_bytes(id, 'big'))
+        id = int.from_bytes(frame.data, 'big')
+        self.connections.pop(id)
+        self.last_update.pop(id)
 
     def handle_alive(self, frame: Frame):
         """

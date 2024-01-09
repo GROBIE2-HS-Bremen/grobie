@@ -72,11 +72,12 @@ class Node():
 
         # make and send measuremnt every 1 second
         self.measurement_controller.start()
+        self.neighbours_controller.start()
         self.network_controller.start()
         print('node has been initialized, controllers started')
 
         self.neighbours_controller.broadcast_join()
-        print('Send a broadcast of config')
+        print('Sended a broadcast of config')
 
     def init_storage(self):
         self.storage_controller.mount('/sd')
