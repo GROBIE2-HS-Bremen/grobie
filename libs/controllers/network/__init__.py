@@ -43,7 +43,7 @@ class INetworkController:
 
     task: asyncio.Task
     callbacks: dict[int, list]
-    network: NetworkHandlerV1
+    network: NetworkHandler
     e220 = E220
    
 
