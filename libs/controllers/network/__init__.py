@@ -57,7 +57,7 @@ class INetworkController:
    
 
     def __init__(self):
-        self.callbacks = {0x04:self.network.cb_incoming_ack()}
+        self.callbacks = {}
         
     def start(self):
         """ start the network controller """
