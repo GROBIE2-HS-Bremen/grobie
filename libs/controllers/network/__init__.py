@@ -12,19 +12,28 @@ class Frame:
         'acknowledgement':0x04
     }
 
-    def __init__(self, type: int, message: bytes, source_address: int, destination_address: int, ttl=20):
+    def __init__(self, type: int, message: bytes, source_address: int, destination_address: int, ttl=20,seq: int,reqnr: int):
         self.type = type
         self.source_address = source_address
         self.destination_address = destination_address
         self.ttl = ttl
+        self.seq = seq
+        self.reqnr = seq
         self.data = message
 
     def serialize(self) -> bytes:
+        # We send maximum 199 bytes to send data in one packet.
         return b''.join([
             self.type.to_bytes(1, 'big'), 
-            self.source_address.to_bytes(2, 'big'), 
             self.destination_address.to_bytes(2, 'big'),
-            self.data
+            self.source_address.to_bytes(2, 'big'), 
+            self.seq.to_bytes(2, 'big'),
+            self.ttl.to_bytes(3, 'big'),
+            self.reqnum.to_bytes(2, 'big'),
+            self.datalen.to_bytes(2, 'big'),
+            self.data,
+            self.crc.to_bytes(2, 'big')
+            
         ])
 
     @staticmethod
@@ -66,12 +75,11 @@ class INetworkController:
         """ stop the network controller """
         self.task.cancel()
 
-    def send_message(self, type: int, message: bytes, addr=255):
+    def send_message(self, type: int, message: bytes, addr=255,source_address,destination_address,ttl):
         """ send a message to the specified address """
-        message = Frame.serialize(type=type,message=message)
-        
+
         # boolean True if simple stop-and-wait reliable protocol needs to be used. Else False
-        self.network.transmit_packet(message,type,addr,True)
+        self.network.transmit_packet(message,type,addr,source_address,destination_address,ttl,True)
 
         
     def register_callback(self, type: int, callback):
