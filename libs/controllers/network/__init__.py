@@ -12,13 +12,13 @@ class Frame:
         'acknowledgement':0x04
     }
 
-    def __init__(self, type: int, message: bytes, source_address: int, destination_address: int, ttl=20,seq: int,reqnr: int):
+    def __init__(self, type: int, message: bytes, source_address: int, destination_address: int, ttl=20,seq: int,ack: int):
         self.type = type
         self.source_address = source_address
         self.destination_address = destination_address
         self.ttl = ttl
-        self.seq = seq
-        self.reqnr = reqnr
+        self.seq = None
+        self.ack = None
         self.data = message
 
     def serialize(self) -> bytes:
