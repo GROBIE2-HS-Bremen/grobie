@@ -2,8 +2,6 @@ import asyncio
 import random
 from libs.E220 import E220
 import time
-import _thread
-
 
 
 
@@ -91,13 +89,10 @@ class NetworkHandlerV1():
         """
         # Only add sequence number on measurement packets
         if type == 0x01 and rbt:
-            lock = _thread.allocate_lock()
-
-
-            lock.acquire()
-            self.e220.send(message,addr)
-            received = await self.wait_for_ack()
-            lock.release()
+            async with lock:
+                self.e220.send(message,addr)
+                received = await self.wait_for_ack()
+           
 
             if received == True:
                 print("[+] ACK received")
