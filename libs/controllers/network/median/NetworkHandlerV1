@@ -1,19 +1,15 @@
 import asyncio
 import random
-import libs.E220
-
-
-PACKET_RETRANSMISSIONS = 0
-RTT_TIME = 0
-
-
+from libs.E220 import E220
+import time
 
 class Frame: 
     FRAME_TYPES = {
         'discovery': 0x00,
         'measurment': 0x01,
         'config': 0x02,
-        'replication': 0x03
+        'replication': 0x03,
+        'acknowledgement':0x04
     }
 
     def __init__(self, type: int, message: bytes, source_address: int, destination_address: int, ttl=20):
@@ -41,17 +37,82 @@ class Frame:
 
         return Frame(type, message, source_address, destination_address)
 
+
+
+
+class NetworkHandlerV1():
+    """
+    Very basic Stop-and-Wait protocol for reliable transmission.
+    
+    """
+    e220 = E220
+
+
+    def __init__(self,data) -> None:
+        self.rxBuff = bytearray()
+
+    
+    async def cb_incoming_ack(self,message):
+        """
+        Callback for incoming ACK to extend into receive buffer
+        """
+        if message.type == 0x04:
+            self.rxBuff.extend(message)
+        else:
+            pass
+        
+
+    async def wait_for_ack(self):
+        """
+        Check buffer to see if ACK has been received.
+        """
+       
+        while time.time() < time.time() + 1:
+            # If we have received the ack in the buffer
+            if self.rxBuff:
+                return True
+            else:
+                continue
+
+        return False
+
+    
+    async def transmit_packet(self,message,type,addr,rbt):
+        """
+        Very simple Stop-And-Wait protocol for sending data
+
+        """
+        # Only add sequence number on measurement packets
+        if type == 0x01 and rbt:
+
+            # Send data with seq included
+            self.e220.send(message,addr)
+            received = await self.wait_for_ack()
+
+            if received == True:
+                print("[+] ACK received")
+            
+            elif received == False:
+                print(f"[-] Something went wrong")
+
+        else:
+            self.e220.send(message,addr)
+
+            
+        
+         
+    
 class INetworkController: 
     """ the abstract base class for all network controllers """
 
     task: asyncio.Task
     callbacks: dict[int, list]
+    network: NetworkHandlerV1
    
 
     def __init__(self):
-        self.callbacks = {}
+        self.callbacks = {0x04:self.network.cb_incoming_ack()}
         
-
     def start(self):
         """ start the network controller """
         loop = asyncio.get_event_loop()
@@ -67,15 +128,18 @@ class INetworkController:
 
     def send_message(self, type: int, message: bytes, addr=255):
         """ send a message to the specified address """
+        message = Frame.serialize(type=type,message=message)
         
-        raise NotImplementedError()
+        # boolean True if simple stop-and-wait reliable protocol needs to be used. Else False
+        self.network.transmit_packet(message,type,addr,True)
 
-    def register_callback(self, addr: int, callback):
+        
+    def register_callback(self, type: int, callback):
         """ register a callback for the specified address """
-        if addr not in self.callbacks:
-            self.callbacks[addr] = []
+        if type not in self.callbacks:
+            self.callbacks[type] = []
 
-        self.callbacks[addr].append(callback)
+        self.callbacks[type].append(callback)
 
     def on_message(self, message: bytes):
         """ called when a message is recieved """
@@ -85,7 +149,7 @@ class INetworkController:
         callbacks = self.callbacks.get(-1, [])  # get the callbacks for the wildcard
         callbacks += self.callbacks.get(frame.type, [])  # get the callbacks for the specific type
 
-
+        
         # call all the callbacks
         for callback in callbacks:
             callback(frame)
@@ -95,78 +159,7 @@ class INetworkController:
     def address(self) -> int:
         """ the address of the node """
         return int.from_bytes(b'\x00\x00', 'big')
-
-
-
-
-class NetworkHandlerV1():
-    """
-    Very basic reliable transmission protocol for basic messages.
-    
-    """
-
-    e220 = E220
-    message = Frame
-
-    def __init__(self,data) -> None:
-        
-        
-        self.snd_seq = b'0'
-        self.rcv_ack = b'1'
-
-
-    async def wait_for_ack(self,data):
-        """
-        Wait until the message has been acknowledged by the receiver.
-        """
-        retransmit_ctr = 0
-        # time determined by propagation time + back off thingy
-        # Tb = R*Tp
-        # 2**K-1
-        time = 3
-        while retransmit_ctr != 3:
-            await asyncio.sleep(time)
-            if ack == False:
-                
-
-
-        
-        # Wait for x timeout for certain ack number self.rcv_ack
-
-        # max 3 retries
-        # if received continue
-        pass
     
 
-    async def transmit_packet(self,data,addr,type,source_address,destination_address,ttl):
-        """
-        Simple Stop-And-Wait protocol for sending data
 
-        """
-
-        message = data+self.snd_seq
-        message = Frame.serialize(type=type,message=message,source_address=source_address,destination_address=destination_address,ttl=20)
-
-        # Send data with seq included
-        self.e220.send(message,addr)
-        received = await self.wait_for_ack(message)
-
-        if received == True:
-            print("[+] Succesfully delivered the package!")
-        
-        elif received == False:
-            print(f"[-] Failure the message couldn't be delivered despite retrying {PACKET_RETRANSMISSIONS} times.")
-       
-
-            
-        return
-         
-    
-
-    async def receive_packet(self,data):
-        """
-        """
-        # Send ACK here if necessary and process data
-       
-        return
 
