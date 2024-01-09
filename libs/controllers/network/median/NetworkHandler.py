@@ -21,9 +21,9 @@ class NetworkHandler():
         self.seq = 0
         self.ack = 0
 
-        self.rxAckBuff = bytearray()
+        self.rcv_ack = False
 
-        
+
         self.rxSegments = bytearray()
 
 
@@ -38,7 +38,7 @@ class NetworkHandler():
         """
         # The right ack
         if message.type == 0x04:
-            self.rxAckBuff.extend(message)
+            self.rcv_ack = True
         else:
             pass
         
@@ -50,8 +50,8 @@ class NetworkHandler():
        
         while time.time() < time.time() + 1:
             # If we have received the ack in the buffer
-            if self.rxAckBuff:
-                self.rxAckBuff.clear()
+            if self.rcv_ack:
+                self.rcv_ack = False
                 return True
             else:
                 continue
