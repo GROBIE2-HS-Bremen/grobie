@@ -2,6 +2,13 @@ import asyncio
 import random
 from libs.E220 import E220
 import time
+import _thread
+
+
+
+
+
+
 
 class Frame: 
     FRAME_TYPES = {
@@ -17,7 +24,6 @@ class Frame:
         self.source_address = source_address
         self.destination_address = destination_address
         self.ttl = ttl
-
         self.data = message
 
     def serialize(self) -> bytes:
@@ -46,7 +52,7 @@ class NetworkHandlerV1():
     
     """
     e220 = E220
-
+    
 
     def __init__(self,data) -> None:
         self.rxBuff = bytearray()
@@ -70,6 +76,7 @@ class NetworkHandlerV1():
         while time.time() < time.time() + 1:
             # If we have received the ack in the buffer
             if self.rxBuff:
+                self.rxBuff.clear()
                 return True
             else:
                 continue
@@ -84,10 +91,13 @@ class NetworkHandlerV1():
         """
         # Only add sequence number on measurement packets
         if type == 0x01 and rbt:
+            lock = _thread.allocate_lock()
 
-            # Send data with seq included
+
+            lock.acquire()
             self.e220.send(message,addr)
             received = await self.wait_for_ack()
+            lock.release()
 
             if received == True:
                 print("[+] ACK received")
