@@ -14,7 +14,7 @@ class E220NetworkController(INetworkController):
         self.e220 = e220
         
         self.network_handler = NetworkHandler(e220=e220)
-        self.register_callback(Frame.FRAME_TYPES['acknowledgement'],self.network_handler.cb_incoming_ack)
+        self.register_callback(Frame.FRAME_TYPES['acknowledgement'],self.network_handler.handle_message)
         self.register_callback(-1,self.network_handler.transmit_ack)
 
         self.e220.set_mode(MODE_CONFIG)
@@ -43,24 +43,14 @@ class E220NetworkController(INetworkController):
                 self.on_message(d)
             await asyncio.sleep(0.1)
 
-<<<<<<< HEAD
     def send_message(self, type: int, message: bytes, addr=255,ttl=20):
         """ send a message to the specified address TO DO split into multiple messages..."""
        
         # boolean True if simple stop-and-wait reliable protocol needs to be used. Else False
         frame = Frame(type,message,self.address,addr,ttl)
 
-        loop = asyncio.get_event_loop()
-        loop.create_task(self.network_handler.transmit_packet(frame))
         
-
-    
-=======
-    def _send_message(self, type: int, message: bytes, addr=255):
-        frame = Frame(type, message, self.address, addr)
-        print(f'sending frame {frame.__dict__}')
-        self.e220.send((0xff00 + addr).to_bytes(2, 'big'), frame.serialize())
->>>>>>> 04a6bbe7bd952c6379eed36cf9d82f9a262dc2ec
+        self.network_handler.transmit_packet(frame)
 
     @property
     def address(self) -> int:

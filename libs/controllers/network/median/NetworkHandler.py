@@ -11,18 +11,17 @@ class NetworkHandler():
 
     e220: E220
 
-    def __init__(self,e220) -> None:
-        
+    def __init__(self,e220,max_tries=3) -> None:
         self.e220 = e220
-
+        self.max_tries = max_tries
         self.rcv_ack = False
         self.rxSegments = bytearray()
 
-    async def cb_measurements(self,message):
+    def handle_message(self,message):
         # TO DO
         raise NotImplementedError()
     
-    async def cb_incoming_ack(self,message):
+    def cb_incoming_ack(self,message):
         """
         Callback for incoming ACK to extend into receive buffer
         """
@@ -31,55 +30,56 @@ class NetworkHandler():
             self.rcv_ack = True
         
     
-    async def wait_for_ack(self,message,addr):
+    def wait_for_ack(self,message,addr,ctr=1):
         """
         Check buffer to see if ACK has been received.
         """
-        lasttime = time.time() + 1
-        while time.time() < lasttime:
+        if ctr > self.max_tries:
+            return False
+        
+        last_time = time.time() + 1
+        while time.time() < last_time:
             # If we have received the ack in the buffer
             if self.rcv_ack:
                 self.rcv_ack = False
                 return True
             else:
-                await asyncio.sleep(0.1)
+                time.sleep(0.1)
         
         # No ack received within time because ack/data got lost -> send repeat
         print("Didnt receive ack in time trying again...")
         self.e220.send(addr,message)
-        await self.wait_for_ack(message,addr)
+        self.wait_for_ack(message,addr,ctr+1)
     
-    async def transmit_packet(self,frame: Frame):
+    def transmit_packet(self,frame: Frame):
         """
         Very simple Stop-And-Wait protocol for sending data
 
         """
 
-        lock = asyncio.Lock()
         message = frame.serialize()
         addr = (0xff00+frame.destination_address).to_bytes(2,'big')
 
         if frame.destination_address == 255:
             return self.e220.send(addr,message)
         
-        async with lock:
-            self.e220.send(addr,message)
-            received = await self.wait_for_ack(message,addr)
+        self.e220.send(addr,message)
+        received = self.wait_for_ack(message,addr)
 
         if received == True:
-            print(f"[+] ACK received")
+            print(f"[+] ACK received.")
         
         elif received == False:
-            print(f"[-] Something went wrong")
+            print(f"[-] Ack not received.")
       
 
 
 
-    async def transmit_ack(self,message):
-        ackmsg = Frame(type=0x04, message=b'TESTACK', source_address=message.destination_address,
+    def transmit_ack(self,message):
+        ackmsg = Frame(type=Frame.FRAME_TYPES['acknowledgement'], message=b'TESTACK', source_address=message.destination_address,
                        destination_address=message.source_address, ttl=20
                        ).serialize()
-        self.e220.send(message.source_address,ackmsg)
+        self.e220.send(message.source_address.to_bytes(2,'big'),ackmsg)
       
         
          

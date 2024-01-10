@@ -41,4 +41,12 @@ node = Node(
     node_config=node_config,
 )
 
+
+async def testendpoint():
+    await asyncio.sleep(0.1)
+    node.network_controller.send_message(1,b'',3)
+
+loop.create_task(testendpoint())
+
+
 loop.run_forever()
