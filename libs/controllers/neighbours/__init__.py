@@ -6,7 +6,7 @@ import asyncio
 
 
 class NeighboursController():
-    def __init__(self, node_config: NodeConfigData, network: INetworkController, heartbeat: int = 120, max_timeout: int = 380) -> None:
+    def __init__(self, node_config: NodeConfigData, network: INetworkController, heartbeat: int = 120, max_timeout: int = 140) -> None:
         """
         heartbeat: aprox time in seconds between sending a "i am alive" message.
         max_timeout: max time in seconds waiting before deleting the node from the connection table.
@@ -58,6 +58,7 @@ class NeighboursController():
         self.last_update[node.addr] = time()
         self.network.send_message(
             Frame.FRAME_TYPES['node_alive'], self.node_config.serialize(), node.addr)
+        print("Connection created, current table: ", self.connections)
 
     def handle_leave(self, frame: Frame):
         """
@@ -71,6 +72,7 @@ class NeighboursController():
         id = int.from_bytes(frame.data, 'big')
         self.connections.pop(id)
         self.last_update.pop(id)
+        print("Node leaving network created, current table: ", self.connections)
 
     def handle_alive(self, frame: Frame):
         """
@@ -82,3 +84,4 @@ class NeighboursController():
         node = NodeConfigData.deserialize(frame.data)
         self.last_update[node.addr] = time()
         self.connections[node.addr] = node
+        print("A node has send a heartbeat, current table: ", self.connections)
