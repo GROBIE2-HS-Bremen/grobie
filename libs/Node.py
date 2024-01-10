@@ -16,13 +16,13 @@ class Node():
                  sensors: list[ISensor],
                  storage_controller: IStorageController,
                  network_controller: INetworkController,
-                 node_config: NodeConfigData,
-                 neighbours_controller: NeighboursController) -> None:
+                 node_config: NodeConfigData) -> None:
 
         self.sensors = sensors
         self.storage_controller = storage_controller
         self.network_controller = network_controller
-        self.neighbours_controller = neighbours_controller
+        self.neighbours_controller = NeighboursController(
+            node_config, network_controller)
 
         self.init_storage()
 
@@ -63,7 +63,7 @@ class Node():
                                                   self.neighbours_controller.handle_join)
         self.network_controller.register_callback(Frame.FRAME_TYPES['node_leaving'],
                                                   self.neighbours_controller.handle_leave)
-        self.network_controller.register_callback(Frame.FRAME_TYPES['node_alive'],
+        self.network_controller.register_callback(-1,
                                                   self.neighbours_controller.handle_alive)
 
         print(self.network_controller.callbacks)
@@ -71,7 +71,8 @@ class Node():
         print('node has been initialized, starting controllers')
 
         # make and send measuremnt every 1 second
-        self.measurement_controller.start(node_config.measurement_interval)
+        self.measurement_controller.start(
+            node_config.measurement_interval * 1000)
         self.neighbours_controller.start()
         self.network_controller.start()
         print('node has been initialized, controllers started')
@@ -100,6 +101,6 @@ class Node():
 
     def store_measurement(self, measurement: Measurement, address=None):
         d = measurement.data
-        d['address'] = address
+        d['address'] = address  # type: ignore
 
         self.database_controller.store(measurement.timestamp, d)

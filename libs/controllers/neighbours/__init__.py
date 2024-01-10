@@ -78,10 +78,12 @@ class NeighboursController():
         """
         Handles a node being alive, updates the config.
         """
+        self.last_update[frame.source_address] = time()
+
         if frame.type != Frame.FRAME_TYPES['node_alive']:
             return
 
         node = NodeConfigData.deserialize(frame.data)
-        self.last_update[node.addr] = time()
-        self.connections[node.addr] = node
+        self.connections[frame.source_address] = node
+
         print("A node has send a heartbeat, current table: ", self.connections)

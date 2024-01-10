@@ -1,9 +1,6 @@
 from libs.controllers.config import NodeConfigData
-from libs.controllers.network import Frame
-from libs.controllers.network.UARTNetworkController import UARTNetworkController
 from libs.controllers.storage.StorageControllerFactory import StorageControllerFactory
 from libs.controllers.network.E220NetworkController import E220NetworkController
-from libs.controllers.neighbours import NeighboursController
 from libs.sensors.SensorFactory import I2CSensorFactory
 from libs.E220 import E220
 from libs.Node import Node
@@ -30,7 +27,7 @@ nc = E220NetworkController(E220(uart=uart, m0=m0, m1=m1), set_config=False)
 # Config
 node_config = NodeConfigData(
     addr=nc.address,
-    measurement_interval=1,
+    measurement_interval=5,
     replication_count=4
 )
 
@@ -42,7 +39,6 @@ node = Node(
     storage_controller=sc,
     network_controller=nc,  # use e220 as network controller
     node_config=node_config,
-    neighbours_controller=NeighboursController(node_config, nc),
 )
 
 loop.run_forever()
