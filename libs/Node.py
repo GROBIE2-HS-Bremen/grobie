@@ -59,7 +59,7 @@ class Node():
         print('node has been initialized, starting controllers')
 
         # make and send measuremnt every 1 second
-        self.measurement_controller.start()
+        self.measurement_controller.start(node_config.measurement_interval)
         self.network_controller.start()
         print('node has been initialized, controllers started')
 
