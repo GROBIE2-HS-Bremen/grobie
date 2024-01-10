@@ -1,15 +1,21 @@
 import asyncio
 from libs.E220 import E220, MODE_CONFIG, MODE_NORMAL
 from libs.controllers.network import Frame, INetworkController
+from libs.controllers.network.median.NetworkHandler import Frame, NetworkHandler
 
 
 class E220NetworkController(INetworkController):
     callbacks: dict[int, list] = {}
+    network_handler: NetworkHandler
 
-    def __init__(self, e220: E220, set_config=False):
+    def __init__(self, e220: E220,set_config=False):
         super().__init__()
-
+        
         self.e220 = e220
+        
+        self.network_handler = NetworkHandler(e220=e220)
+        self.register_callback(Frame.FRAME_TYPES['acknowledgement'],self.network_handler.cb_incoming_ack)
+        self.register_callback(-1,self.network_handler.transmit_ack)
 
         self.e220.set_mode(MODE_CONFIG)
         self.e220.get_settings()
@@ -36,10 +42,17 @@ class E220NetworkController(INetworkController):
                 self.on_message(d)
             await asyncio.sleep(0.1)
 
-    def send_message(self, type: int, message: bytes, addr=255):
-        frame = Frame(type, message, self.address, addr)
-        print(f'sending frame {frame.__dict__}')
-        self.e220.send((0xff00 + addr).to_bytes(2, 'big'), frame.serialize())
+    def send_message(self, type: int, message: bytes, addr=255,ttl=20):
+        """ send a message to the specified address TO DO split into multiple messages..."""
+       
+        # boolean True if simple stop-and-wait reliable protocol needs to be used. Else False
+        frame = Frame(type,message,self.address,addr,ttl)
+
+        loop = asyncio.get_event_loop()
+        loop.create_task(self.network_handler.transmit_packet(frame))
+        
+
+    
 
     @property
     def address(self) -> int:
