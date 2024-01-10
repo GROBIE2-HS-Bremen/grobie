@@ -1,4 +1,6 @@
 import asyncio
+import _thread
+import time
 
 
 class Frame:
@@ -40,14 +42,30 @@ class INetworkController:
 
     task: asyncio.Task
     callbacks: dict[int, list]
+    q: list
 
     def __init__(self):
         self.callbacks = {}
+        self.q = []
 
     def start(self):
         """ start the network controller """
         loop = asyncio.get_event_loop()
         self.task = loop.create_task(self._start())
+        # start a thread
+        self.thread = _thread.start_new_thread(self._thread, ())
+
+    def _thread(self):
+        while True:
+            if len(self.q) > 0:
+                type, message, addr = self.q.pop()
+                self._send_message(type, message, addr)
+            else:
+                time.sleep(0.001)
+                
+    def _send_message(self, type: int, message: bytes, addr=255):
+        """ send a message to the specified address """
+        raise NotImplementedError()
 
     async def _start(self):
         """ the main loop of the network controller """
@@ -59,7 +77,7 @@ class INetworkController:
 
     def send_message(self, type: int, message: bytes, addr=255):
         """ send a message to the specified address """
-        raise NotImplementedError()
+        self.q.append((type, message, addr))
 
     def register_callback(self, addr: int, callback):
         """ register a callback for the specified address """
