@@ -73,13 +73,16 @@ class NetworkHandler():
             print(f"[-] Ack not received.")
       
 
-
-
     def transmit_ack(self,message):
-        ackmsg = Frame(type=Frame.FRAME_TYPES['acknowledgement'], message=b'TESTACK', source_address=message.destination_address,
-                       destination_address=message.source_address, ttl=20
-                       ).serialize()
+
+        if message.type == Frame.FRAME_TYPES['acknowledgement'] or message.destination_address == 255:
+            return
+        
+    
+        ackmsg = Frame(type=Frame.FRAME_TYPES['acknowledgement'], message=b'', source_address=message.destination_address,
+                    destination_address=message.source_address, ttl=20
+                    ).serialize()
         self.e220.send(message.source_address.to_bytes(2,'big'),ackmsg)
-      
+        
         
          

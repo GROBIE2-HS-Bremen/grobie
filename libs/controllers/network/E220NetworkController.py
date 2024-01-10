@@ -14,7 +14,7 @@ class E220NetworkController(INetworkController):
         self.e220 = e220
         
         self.network_handler = NetworkHandler(e220=e220)
-        self.register_callback(Frame.FRAME_TYPES['acknowledgement'],self.network_handler.handle_message)
+        self.register_callback(Frame.FRAME_TYPES['acknowledgement'],self.cb_incoming_ack)
         self.register_callback(-1,self.network_handler.transmit_ack)
 
         self.e220.set_mode(MODE_CONFIG)
