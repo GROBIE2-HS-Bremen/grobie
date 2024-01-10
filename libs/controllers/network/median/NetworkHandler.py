@@ -14,9 +14,10 @@ class NetworkHandler():
     netcontroller = INetworkController
     
 
-    def __init__(self,data) -> None:
-        self.netcontroller.register_callback(0x04,self.cb_incoming_ack)
-        self.netcontroller.register_callback(0x01,self.transmit_ack)
+    def __init__(self,data,netcontroller) -> None:
+        
+        netcontroller.register_callback(0x04,self.cb_incoming_ack)
+        netcontroller.register_callback(0x01,self.transmit_ack)
 
         self.seq = 0
         self.ack = 0
@@ -47,14 +48,14 @@ class NetworkHandler():
         """
         Check buffer to see if ACK has been received.
         """
-       
-        while time.time() < time.time() + 1:
+        lasttime = time.time() + 1
+        while time.time() < lasttime:
             # If we have received the ack in the buffer
             if self.rcv_ack:
                 self.rcv_ack = False
                 return True
             else:
-                continue
+                time.sleep(0.1)
         
         # No ack received within time because ack/data got lost -> send repeat
         print("Didnt receive ack in time trying again...")
