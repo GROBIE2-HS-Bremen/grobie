@@ -1,5 +1,7 @@
 import asyncio
 from libs.E220 import E220
+import _thread
+import time
 
 
 
@@ -9,7 +11,10 @@ class Frame:
         'measurment': 0x01,
         'config': 0x02,
         'replication': 0x03,
-        'acknowledgement':0x04
+        'acknowledgement':0x04,
+        'node_joining': 0x06,
+        'node_leaving': 0x07,
+        'node_alive': 0x08,
     }
 
     def __init__(self, type: int, message: bytes, source_address: int, destination_address: int, ttl=20):
@@ -50,17 +55,30 @@ class INetworkController:
 
     task: asyncio.Task
     callbacks: dict[int, list]
-    
-    e220 = E220
-   
+    q: list
 
     def __init__(self):
         self.callbacks = {}
-        
+        self.q = []
+
     def start(self):
         """ start the network controller """
         loop = asyncio.get_event_loop()
         self.task = loop.create_task(self._start())
+        # start a thread
+        self.thread = _thread.start_new_thread(self._thread, ())
+
+    def _thread(self):
+        while True:
+            if len(self.q) > 0:
+                type, message, addr = self.q.pop()
+                self._send_message(type, message, addr)
+            else:
+                time.sleep(0.001)
+                
+    def _send_message(self, type: int, message: bytes, addr=255):
+        """ send a message to the specified address """
+        raise NotImplementedError()
 
     async def _start(self):
         raise NotImplementedError()
@@ -70,8 +88,8 @@ class INetworkController:
         self.task.cancel()
 
     def send_message(self, type: int, message: bytes, addr=255):
-        """ send a message to the specified address TODO split into multiple messages..."""
-        raise NotImplementedError()
+        """ send a message to the specified address """
+        self.q.append((type, message, addr))
 
 
     def register_callback(self, type: int, callback):
@@ -86,8 +104,10 @@ class INetworkController:
         frame = Frame.deserialize(message)
 
         # get all the callback functions
-        callbacks = self.callbacks.get(-1, [])  # get the callbacks for the wildcard
-        callbacks += self.callbacks.get(frame.type, [])  # get the callbacks for the specific type
+        # get the callbacks for the wildcard
+        callbacks = self.callbacks.get(-1, [])
+        # get the callbacks for the specific type
+        callbacks += self.callbacks.get(frame.type, [])
 
         
         # call all the callbacks
