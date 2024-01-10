@@ -3,7 +3,7 @@ from libs.controllers.network import Frame
 from libs.controllers.network.UARTNetworkController import UARTNetworkController
 from libs.controllers.storage.StorageControllerFactory import StorageControllerFactory
 from libs.controllers.network.E220NetworkController import E220NetworkController
-from libs.controllers.neighbours.NeighboursController import NeighboursController
+from libs.controllers.neighbours import NeighboursController
 from libs.sensors.SensorFactory import I2CSensorFactory
 from libs.E220 import E220
 from libs.Node import Node

@@ -7,7 +7,7 @@ from libs.controllers.network.E220NetworkController import Frame
 from libs.controllers.replication import ReplicationController
 from libs.sensors import ISensor
 from libs.controllers.storage import IStorageController
-from libs.controllers.neighbours.NeighboursController import NeighboursController
+from libs.controllers.neighbours import NeighboursController
 
 
 class Node():
