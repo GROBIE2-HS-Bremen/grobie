@@ -12,7 +12,7 @@ class Frame:
         'acknowledgement':0x04
     }
 
-    def __init__(self, type: int, message: bytes, source_address: int, destination_address: int, ttl=20,seq: int,ack: int):
+    def __init__(self, type: int, message: bytes, source_address: int, destination_address: int,seq: int,ack: int, ttl=20):
         self.type = type
         self.source_address = source_address
         self.destination_address = destination_address
