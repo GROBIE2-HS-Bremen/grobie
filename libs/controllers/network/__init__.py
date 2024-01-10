@@ -12,13 +12,11 @@ class Frame:
         'acknowledgement':0x04
     }
 
-    def __init__(self, type: int, message: bytes, source_address: int, destination_address: int,seq: int,ack: int, ttl=20):
+    def __init__(self, type: int, message: bytes, source_address: int, destination_address: int, ttl=20):
         self.type = type
         self.source_address = source_address
         self.destination_address = destination_address
         self.ttl = ttl
-        self.seq = None
-        self.ack = None
         self.data = message
 
     def serialize(self) -> bytes:
@@ -52,7 +50,7 @@ class INetworkController:
 
     task: asyncio.Task
     callbacks: dict[int, list]
-    network: NetworkHandler
+    
     e220 = E220
    
 
@@ -65,28 +63,17 @@ class INetworkController:
         self.task = loop.create_task(self._start())
 
     async def _start(self):
-        while True:
-            d = self.e220.read()
-            if d:
-                self.on_message(d)
-                
-            await asyncio.sleep(0.1)
+        raise NotImplementedError()
 
     def stop(self):
         """ stop the network controller """
         self.task.cancel()
 
-    def send_message(self, type: int, source_address,destination_address,ttl, message: bytes, addr=255):
+    def send_message(self, type: int, message: bytes, addr=255):
         """ send a message to the specified address TODO split into multiple messages..."""
-        if not destination_address:
-            destination_address = b'\xff\xff'
-        # boolean True if simple stop-and-wait reliable protocol needs to be used. Else False
-        self.network.transmit_packet(message,type,addr,source_address,destination_address,ttl,True)
+        raise NotImplementedError()
 
 
-
-
-        
     def register_callback(self, type: int, callback):
         """ register a callback for the specified address """
         if type not in self.callbacks:
