@@ -14,36 +14,29 @@ class NetworkHandler():
     netcontroller = INetworkController
     
 
-    def __init__(self,data,netcontroller) -> None:
+    def __init__(self,netcontroller) -> None:
         
-        netcontroller.register_callback(0x04,self.cb_incoming_ack)
-        netcontroller.register_callback(0x01,self.transmit_ack)
+        netcontroller.register_callback(Frame.FRAME_TYPES['acknowledgement'],self.cb_incoming_ack)
+        netcontroller.register_callback(-1,self.transmit_ack)
 
-        self.seq = 0
-        self.ack = 0
+        self.seq = False
+        self.ack = False
 
         self.rcv_ack = False
-
-
         self.rxSegments = bytearray()
-
 
     async def cb_measurements(self,message):
         # TO DO
         raise NotImplementedError()
-
-        
+    
     async def cb_incoming_ack(self,message):
         """
         Callback for incoming ACK to extend into receive buffer
         """
         # The right ack
-        if message.type == 0x04:
+        if message.type == Frame.FRAME_TYPES['acknowledgement']:
             self.rcv_ack = True
-        else:
-            pass
         
-
     async def wait_for_ack(self,message,addr):
         """
         Check buffer to see if ACK has been received.
@@ -55,15 +48,12 @@ class NetworkHandler():
                 self.rcv_ack = False
                 return True
             else:
-                time.sleep(0.1)
+                await asyncio.sleep(0.1)
         
         # No ack received within time because ack/data got lost -> send repeat
         print("Didnt receive ack in time trying again...")
         self.e220.send(message,addr)
         self.wait_for_ack(message,addr)
-        
-       
-
     
     async def transmit_packet(self,message,type,addr,source_address,destination_address,ttl,rbt):
         """
@@ -72,12 +62,11 @@ class NetworkHandler():
         """
 
         lock = asyncio.Lock()
+        message = Frame(type,message,source_address,destination_address,ttl).serialize()
         
-        # Only add sequence number on measurement packets
-        if type == 0x01 and rbt:
+        if rbt:
             async with lock:
-                message = Frame.serialize(type,message,source_address,destination_address,ttl,self.seq)
-                self.e220.send(message,addr)
+                self.e220.send(addr,message)
                 received = await self.wait_for_ack(message,addr)
 
             if received == True:
@@ -87,18 +76,15 @@ class NetworkHandler():
                 print(f"[-] Something went wrong")
 
         else:
-            message = Frame.serialize(type,message,source_address,destination_address,ttl)
-            self.e220.send(message,addr)
+            self.e220.send(addr,message)
 
 
 
     async def transmit_ack(self,message):
         ackmsg = Frame(type=0x04, message=b'TESTACK', source_address=message.destination_address,
-                       destination_address=message.source_address, ttl=20,ack=0
-                       )
-        ackmsg = ackmsg.serialize()
-        self.e220.send(ackmsg,message.source_address)
+                       destination_address=message.source_address, ttl=20
+                       ).serialize()
+        self.e220.send(message.source_address,ackmsg)
       
         
          
-
