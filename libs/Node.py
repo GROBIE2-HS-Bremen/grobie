@@ -7,6 +7,7 @@ from libs.controllers.network.E220NetworkController import Frame
 from libs.controllers.replication import ReplicationController
 from libs.sensors import ISensor
 from libs.controllers.storage import IStorageController
+from libs.controllers.neighbours import NeighboursController
 
 
 class Node():
@@ -20,6 +21,8 @@ class Node():
         self.sensors = sensors
         self.storage_controller = storage_controller
         self.network_controller = network_controller
+        self.neighbours_controller = NeighboursController(
+            node_config, network_controller)
 
         self.init_storage()
 
@@ -28,7 +31,8 @@ class Node():
             actions=[
                 lambda m: print(type(m), str(m)),
                 lambda measurement: self.store_measurement(measurement),
-                lambda measurement: network_controller.send_message(1, measurement.encode())
+                lambda measurement: network_controller.send_message(
+                    1, measurement.encode())
             ])
 
         self.config_controller = ConfigController(
@@ -36,10 +40,12 @@ class Node():
             send_message=network_controller.send_message
         )
 
-        self.replication_controller = ReplicationController(self.config_controller)
+        self.replication_controller = ReplicationController(
+            self.config_controller)
 
         filepath = '/sd/data.db'
-        self.database_controller = BinarKVDatabase(filepath, self.storage_controller)
+        self.database_controller = BinarKVDatabase(
+            filepath, self.storage_controller)
 
         # Register message callbacks
         self.network_controller.register_callback(-1, lambda frame: print(
@@ -53,21 +59,32 @@ class Node():
                                                   self.config_controller.handle_message)  # handle config changes
         self.network_controller.register_callback(Frame.FRAME_TYPES['replication'],
                                                   self.replication_controller.handle_bid)  # handle replication changes
+        self.network_controller.register_callback(Frame.FRAME_TYPES['node_joining'],
+                                                  self.neighbours_controller.handle_join)
+        self.network_controller.register_callback(Frame.FRAME_TYPES['node_leaving'],
+                                                  self.neighbours_controller.handle_leave)
+        self.network_controller.register_callback(-1,
+                                                  self.neighbours_controller.handle_alive)
 
         print(self.network_controller.callbacks)
 
         print('node has been initialized, starting controllers')
 
         # make and send measuremnt every 1 second
-        self.measurement_controller.start()
+        self.measurement_controller.start(
+            node_config.measurement_interval * 1000)
+        self.neighbours_controller.start()
         self.network_controller.start()
         print('node has been initialized, controllers started')
+
+        self.neighbours_controller.broadcast_join()
+        print('Sended a broadcast of config')
 
     def init_storage(self):
         self.storage_controller.mount('/sd')
 
     def store_measurement_frame(self, frame: Frame):
-        # check if we should store 
+        # check if we should store
         if self.replication_controller.should_replicate(frame.source_address):
             measurement = Measurement.decode(frame.data)
             return self.store_measurement(measurement)
@@ -78,11 +95,12 @@ class Node():
             if len(self.replication_controller.config_controller.ledger[frame.source_address].replications) < \
                     self.replication_controller.config_controller.ledger[frame.source_address].replication_count:
                 # send a bid
-                self.network_controller.send_message(3, frame.ttl.to_bytes(4, 'big'), frame.source_address)
+                self.network_controller.send_message(
+                    3, frame.ttl.to_bytes(4, 'big'), frame.source_address)
                 return
 
     def store_measurement(self, measurement: Measurement, address=None):
         d = measurement.data
-        d['address'] = address
+        d['address'] = address  # type: ignore
 
         self.database_controller.store(measurement.timestamp, d)
