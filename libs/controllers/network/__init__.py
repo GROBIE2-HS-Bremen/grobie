@@ -71,12 +71,12 @@ class INetworkController:
     def _thread(self):
         while True:
             if len(self.q) > 0:
-                type, message, addr = self.q.pop()
-                self._send_message(type, message, addr)
+                type, message, addr, last_hop = self.q.pop()
+                self._send_message(type, message, addr, last_hop)
             else:
                 time.sleep(0.001)
                 
-    def _send_message(self, type: int, message: bytes, addr: int):
+    def _send_message(self, type: int, message: bytes, addr: int, last_hop: int):
         """ send a message to the specified address """
         raise NotImplementedError()
 
