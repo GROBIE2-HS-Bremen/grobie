@@ -30,11 +30,12 @@ class Frame:
             self.type.to_bytes(1, 'big'), 
             self.destination_address.to_bytes(2, 'big'),
             self.source_address.to_bytes(2, 'big'), 
-            #self.seq.to_bytes(2, 'big'),
             self.ttl.to_bytes(3, 'big'),
+            self.data,
+
+            #self.seq.to_bytes(2, 'big'),
             #self.reqnum.to_bytes(2, 'big'),
             #self.datalen.to_bytes(2, 'big'),
-            self.data,
             #self.crc.to_bytes(2, 'big')
             
         ])

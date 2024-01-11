@@ -78,7 +78,7 @@ class NetworkHandler():
         if message.type == Frame.FRAME_TYPES['acknowledgement'] or message.destination_address == 255:
             return
         
-    
+        print(f"Sending ACK to {message.source_address}")
         ackmsg = Frame(type=Frame.FRAME_TYPES['acknowledgement'], message=b'', source_address=message.destination_address,
                     destination_address=message.source_address, ttl=20
                     ).serialize()

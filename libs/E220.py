@@ -154,6 +154,7 @@ WOR Cycle:                  {self.wor_cycle}ms"""
         self.lbt_enabled = msg[8] & 0x10 == 0x10
         self.wor_cycle = WOR_CYCLE[msg[8] & 0x07]
 
+        sleep_ms(1000)
     def save(self) -> None:
         header = b'\xc0\x00\x06'
 
