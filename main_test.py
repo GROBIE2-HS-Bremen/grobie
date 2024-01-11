@@ -18,7 +18,7 @@ sc = StorageControllerFactory.get_controller(
 sensors = I2CSensorFactory.create_sensors(i2c)
 
 ##### INITIALIZE NETWORK #####
-uart = UART(1, baudrate=9600, rx=Pin(5), tx=Pin(4), timeout=10)
+uart = UART(1, baudrate=9600, rx=Pin(5), tx=Pin(4), timeout=15)
 # we will create the same network controller for all nodes as they need to connect to the same network
 m0 = Pin(26, Pin.OUT)
 m1 = Pin(15, Pin.OUT)
