@@ -1,10 +1,12 @@
 import asyncio
 from libs.E220 import E220, MODE_CONFIG, MODE_NORMAL
 from libs.controllers.network import Frame, INetworkController
+from libs.controllers.routing import RoutingController
 
 
 class E220NetworkController(INetworkController):
     callbacks: dict[int, list] = {}
+    routing: RoutingController
 
     def __init__(self, e220: E220, set_config=False):
         super().__init__()
@@ -38,6 +40,14 @@ class E220NetworkController(INetworkController):
             await asyncio.sleep(0.1)
 
     def _send_message(self, type: int, message: bytes, addr=255):
+        # Get the address of the next hop
+        if addr != 255:
+            addr = self.routing.getRoute(addr)
+
+        # Node out of reach of network
+        if addr == -1:
+            return
+
         frame = Frame(type, message, self.address, addr)
         print(f'sending frame {frame.__dict__}')
         self.e220.send((0xff00 + addr).to_bytes(2, 'big'), frame.serialize())

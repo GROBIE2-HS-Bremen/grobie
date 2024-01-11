@@ -8,6 +8,7 @@ from libs.controllers.replication import ReplicationController
 from libs.sensors import ISensor
 from libs.controllers.storage import IStorageController
 from libs.controllers.neighbours import NeighboursController
+from libs.controllers.routing import RoutingController
 
 
 class Node():
@@ -23,6 +24,8 @@ class Node():
         self.network_controller = network_controller
         self.neighbours_controller = NeighboursController(
             node_config, network_controller)
+        self.routing_controller = RoutingController(
+            self.neighbours_controller, self.network_controller)
 
         self.init_storage()
 
@@ -65,6 +68,10 @@ class Node():
                                                   self.neighbours_controller.handle_leave)
         self.network_controller.register_callback(-1,
                                                   self.neighbours_controller.handle_alive)
+        self.network_controller.register_callback(Frame.FRAME_TYPES['route_reqeust'],
+                                                  self.routing_controller.handle_routing_response)
+        self.network_controller.register_callback(Frame.FRAME_TYPES['route_response'],
+                                                  self.routing_controller.handle_routing_request)
 
         print(self.network_controller.callbacks)
 

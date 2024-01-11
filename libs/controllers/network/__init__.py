@@ -9,6 +9,8 @@ class Frame:
         'measurment': 0x01,
         'config': 0x02,
         'replication': 0x03,
+        'route_reqeust': 0x04,
+        'route_response': 0x05,
         'node_joining': 0x06,
         'node_leaving': 0x07,
         'node_alive': 0x08,
