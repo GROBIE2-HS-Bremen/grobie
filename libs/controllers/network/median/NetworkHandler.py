@@ -45,7 +45,7 @@ class NetworkHandler():
                 time.sleep(0.1)
         
         # No ack received within time because ack/data got lost -> send repeat
-        print(f"Not received ack in time, trying again {ctr+'/'+self.max_tries}")
+        print(f"Not received ack in time, trying again {ctr}/{self.max_tries}")
         self.e220.send(addr,message)
         self.wait_for_ack(message,addr,ctr+1)
     

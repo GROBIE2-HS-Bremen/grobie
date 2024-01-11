@@ -34,9 +34,9 @@ class Frame:
             self.destination_address.to_bytes(2, 'big'),
             self.source_address.to_bytes(2, 'big'),
             self.ttl.to_bytes(3, 'big'),
-            self.data(188,'big'),
-            self.framenum.to_bytes(2, 'big'),
-            self.crc.to_bytes(2, 'big'),
+            self.data,
+            #self.framenum.to_bytes(2, 'big'),
+            #self.crc.to_bytes(2, 'big'),
             ])
         
         

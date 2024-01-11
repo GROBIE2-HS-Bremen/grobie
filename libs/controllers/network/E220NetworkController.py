@@ -47,6 +47,7 @@ class E220NetworkController(INetworkController):
         """ send a message to the specified address splits into multiple messages if needed.
         Ebyte module sends data in one continous message if data is 199 bytes or lower.
         """
+        """
         framenr = 0
         length_msg = len(message)
 
@@ -58,9 +59,10 @@ class E220NetworkController(INetworkController):
             datasplits = [message]
             
         for msg in datasplits:
-            frame = Frame(type,msg,self.address,addr,ttl,framenr)
-            self.network_handler.transmit_packet(frame)
-            framenr -= 1
+        """
+        frame = Frame(type,message,self.address,addr,ttl)
+        self.network_handler.transmit_packet(frame)
+        #framenr -= 1
 
     @property
     def address(self) -> int:
