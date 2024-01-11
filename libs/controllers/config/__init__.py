@@ -27,7 +27,7 @@ class ConfigController:
     def handle_message(self, frame: Frame):
 
         # check if it is a discovery message
-        if frame.type == Frame.FRAME_TYPES['discovery']:
+        if frame.type == Frame.FRAME_TYPES['node_joining']:
             # parse the message
             config = NodeConfigData.deserialize(frame.data)
             # update the ledger
@@ -65,8 +65,8 @@ class ConfigController:
     def broadcast_config(self, new_config=None):
         if new_config is None:
             # broadcast the config. 
-            # we use the discovery as we most likely are a new node 
-            self.send_message(Frame.FRAME_TYPES['discovery'], self._config.serialize())
+            # we use the node_joining as we most likely are a new node 
+            self.send_message(Frame.FRAME_TYPES['node_joining'], self._config.serialize())
 
         else:
             # broadcast only the difference config

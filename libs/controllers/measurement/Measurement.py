@@ -1,11 +1,9 @@
 import libs.external.umsgpack as umsgpack
 
-import math
 
 
 class Measurement:
     data: dict[str, float | int]
-    timestamp: int
 
     def __init__(self, timestamp, **kwargs) -> None:
         self.data = kwargs

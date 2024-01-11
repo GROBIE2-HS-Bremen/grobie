@@ -1,6 +1,7 @@
 from libs.controllers.measurement.Measurement import Measurement
 from libs.sensors import ISensor
 import asyncio
+import utime
 
 
 class MeasurementController:
@@ -27,7 +28,7 @@ class MeasurementController:
             data.update(sensor.get_measurement())
 
         measurement = Measurement(
-            timestamp=0,
+            timestamp=utime.time(),
             data=data
         )
         measurement.data = data

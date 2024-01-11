@@ -1,5 +1,6 @@
 from libs.controllers.config import ConfigController, NodeConfigData
 from libs.controllers.database.BinaryKV import BinarKVDatabase
+from libs.controllers.database.CsvDatabase import CsvDatabase
 from libs.controllers.measurement import MeasurementController
 from libs.controllers.measurement.Measurement import Measurement
 from libs.controllers.network import INetworkController
@@ -21,8 +22,6 @@ class Node():
         self.sensors = sensors
         self.storage_controller = storage_controller
         self.network_controller = network_controller
-        self.neighbours_controller = NeighboursController(
-            node_config, network_controller)
 
         self.init_storage()
 
@@ -39,12 +38,16 @@ class Node():
             config=node_config,
             send_message=network_controller.send_message
         )
+        self.neighbours_controller = NeighboursController(
+            self.config_controller, 
+            network_controller
+        )
 
         self.replication_controller = ReplicationController(
             self.config_controller)
 
-        filepath = '/sd/data.db'
-        self.database_controller = BinarKVDatabase(
+        filepath = '/sd/data.csv'
+        self.database_controller = CsvDatabase(
             filepath, self.storage_controller)
 
         # Register message callbacks
@@ -53,7 +56,7 @@ class Node():
 
         self.network_controller.register_callback(Frame.FRAME_TYPES['measurment'],
                                                   self.store_measurement_frame)  # decide if we want to store the measurement
-        self.network_controller.register_callback(Frame.FRAME_TYPES['discovery'],
+        self.network_controller.register_callback(Frame.FRAME_TYPES['node_joining'],
                                                   self.config_controller.handle_message)  # new nodes will broadcast this type of message
         self.network_controller.register_callback(Frame.FRAME_TYPES['config'],
                                                   self.config_controller.handle_message)  # handle config changes
@@ -84,6 +87,12 @@ class Node():
         self.storage_controller.mount('/sd')
 
     def store_measurement_frame(self, frame: Frame):
+        # check if node is in ledger
+        if frame.source_address not in self.config_controller.ledger:
+            # request a config
+            print('not in ledger, requesting config')
+            return
+
         # check if we should store
         if self.replication_controller.should_replicate(frame.source_address):
             measurement = Measurement.decode(frame.data)
@@ -101,6 +110,9 @@ class Node():
 
     def store_measurement(self, measurement: Measurement, address=None):
         d = measurement.data
+        if address is None:
+            d['address'] = self.network_controller.address
+
         d['address'] = address  # type: ignore
 
         self.database_controller.store(measurement.timestamp, d)
