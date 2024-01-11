@@ -17,9 +17,7 @@ class NetworkHandler():
         self.rcv_ack = False
         self.rxSegments = bytearray()
 
-    def handle_message(self,message):
-        # TO DO
-        raise NotImplementedError()
+
     
     def cb_incoming_ack(self,message):
         """
@@ -47,7 +45,7 @@ class NetworkHandler():
                 time.sleep(0.1)
         
         # No ack received within time because ack/data got lost -> send repeat
-        print("Didnt receive ack in time trying again...")
+        print(f"Not received ack in time, trying again {ctr+'/'+self.max_tries}")
         self.e220.send(addr,message)
         self.wait_for_ack(message,addr,ctr+1)
     
@@ -58,7 +56,8 @@ class NetworkHandler():
         """
 
         message = frame.serialize()
-        addr = (0xff00+frame.destination_address).to_bytes(2,'big')
+        # 0xff00
+        addr = (frame.destination_address).to_bytes(2,'big')
 
         if frame.destination_address == 255:
             return self.e220.send(addr,message)
@@ -70,7 +69,7 @@ class NetworkHandler():
             print(f"[+] ACK received.")
         
         elif received == False:
-            print(f"[-] Ack not received.")
+            print(f"[-] ACK not received.")
       
 
     def transmit_ack(self,message):

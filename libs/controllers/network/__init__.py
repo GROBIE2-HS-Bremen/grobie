@@ -2,6 +2,7 @@ import asyncio
 from libs.E220 import E220
 import _thread
 import time
+import math
 
 
 
@@ -17,29 +18,28 @@ class Frame:
         'node_alive': 0x08,
     }
 
-    def __init__(self, type: int, message: bytes, source_address: int, destination_address: int, ttl=20):
+    def __init__(self, type: int, message: bytes, source_address: int, destination_address: int, ttl=20,framenum=1):
         self.type = type
         self.source_address = source_address
         self.destination_address = destination_address
         self.ttl = ttl
         self.data = message
+        self.framenum = framenum
+  
 
     def serialize(self) -> bytes:
-        # We send maximum 199 bytes to send data in one packet.
+        
         return b''.join([
             self.type.to_bytes(1, 'big'), 
             self.destination_address.to_bytes(2, 'big'),
-            self.source_address.to_bytes(2, 'big'), 
+            self.source_address.to_bytes(2, 'big'),
             self.ttl.to_bytes(3, 'big'),
-            self.data,
-
-            #self.seq.to_bytes(2, 'big'),
-            #self.reqnum.to_bytes(2, 'big'),
-            #self.datalen.to_bytes(2, 'big'),
-            #self.crc.to_bytes(2, 'big')
-            
-        ])
-
+            self.data(188,'big'),
+            self.framenum.to_bytes(2, 'big'),
+            self.crc.to_bytes(2, 'big'),
+            ])
+        
+        
     @staticmethod
     def deserialize(frame: bytes):
         type = frame[0]
@@ -61,6 +61,7 @@ class INetworkController:
     def __init__(self):
         self.callbacks = {}
         self.q = []
+        self.sessions = {}
 
     def start(self):
         """ start the network controller """
@@ -102,7 +103,10 @@ class INetworkController:
 
     def on_message(self, message: bytes):
         """ called when a message is recieved """
+        
         frame = Frame.deserialize(message)
+
+        
 
         # get all the callback functions
         # get the callbacks for the wildcard

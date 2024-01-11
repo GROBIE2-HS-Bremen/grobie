@@ -43,12 +43,24 @@ class E220NetworkController(INetworkController):
                 self.on_message(d)
             await asyncio.sleep(0.1)
 
-    def send_message(self, type: int, message: bytes, addr=255,ttl=20):
-        """ send a message to the specified address TO DO split into multiple messages..."""
-       
-        # boolean True if simple stop-and-wait reliable protocol needs to be used. Else False
-        frame = Frame(type,message,self.address,addr,ttl)
-        self.network_handler.transmit_packet(frame)
+    def send_message(self, type: int, message: bytes, addr=255,ttl=20,datasize=188):
+        """ send a message to the specified address splits into multiple messages if needed.
+        Ebyte module sends data in one continous message if data is 199 bytes or lower.
+        """
+        framenr = 0
+        length_msg = len(message)
+
+        if length_msg > datasize:
+            framenr = length_msg // datasize + 1
+            datasplits = [message[i:i+framenr] for i in range(0, len(message), framenr)]
+            
+        else:
+            datasplits = [message]
+            
+        for msg in datasplits:
+            frame = Frame(type,msg,self.address,addr,ttl,framenr)
+            self.network_handler.transmit_packet(frame)
+            framenr -= 1
 
     @property
     def address(self) -> int:
