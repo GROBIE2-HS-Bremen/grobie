@@ -88,31 +88,32 @@ class Node():
 
     def store_measurement_frame(self, frame: Frame):
         # check if node is in ledger
-        if frame.source_address not in self.config_controller.ledger:
+        if frame.last_hop not in self.config_controller.ledger:
             return
 
         # check if we should store
-        if self.replication_controller.are_replicating(frame.source_address):
+        if self.replication_controller.are_replicating(frame.last_hop):
             print('are replicating')
             measurement = Measurement.decode(frame.data)
-            return self.store_measurement(measurement)
+            return self.store_measurement(measurement, frame.last_hop)
 
         # check if it needs new replications
-        if self.replication_controller.should_replicate(frame.source_address):
+        if self.replication_controller.should_replicate(frame.last_hop):
             print('should replicate')
             # check if we have enough replications
-            if len(self.replication_controller.config_controller.ledger[frame.source_address].replications) < \
-                    self.replication_controller.config_controller.ledger[frame.source_address].replication_count:
+            if len(self.replication_controller.config_controller.ledger[frame.last_hop].replications) < \
+                    self.replication_controller.config_controller.ledger[frame.last_hop].replication_count:
                 # send a bid
                 self.network_controller.send_message(
-                    Frame.FRAME_TYPES['replication'], frame.ttl.to_bytes(4, 'big'), frame.source_address)
+                    Frame.FRAME_TYPES['replication'], frame.ttl.to_bytes(4, 'big'), frame.last_hop)
                 return
 
     def store_measurement(self, measurement: Measurement, address=None):
         d = measurement.data
         if address is None:
-            d['address'] = self.network_controller.address
+            address = self.network_controller.address
 
-        d['address'] = address  # type: ignore
+        print(f'storing measurement {measurement} from {address}')
+        d['address'] = address
 
         self.database_controller.store(measurement.timestamp, d)

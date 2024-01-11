@@ -27,7 +27,7 @@ nc = E220NetworkController(E220(uart=uart, m0=m0, m1=m1), set_config=True)
 # Config
 node_config = NodeConfigData(
     addr=nc.address,
-    measurement_interval=60,
+    measurement_interval=2,
     replication_count=4
 )
 

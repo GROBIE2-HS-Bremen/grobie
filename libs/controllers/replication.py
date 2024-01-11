@@ -68,11 +68,11 @@ class ReplicationController:
             return
 
         # check if we already have a bid for this node. if so ignore it.
-        if frame.source_address in self.bids:
+        if frame.last_hop in self.bids:
             return
 
         # store the bid
-        self.bids[frame.source_address] = frame.ttl  # decode the ttl to an int
+        self.bids[frame.last_hop] = frame.ttl  # decode the ttl to an int
 
         # start a timer to wait for other bids. the lenght of this timer is in config
         if not self.waiting_for_bids:

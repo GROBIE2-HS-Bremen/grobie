@@ -15,8 +15,9 @@ class Frame:
         'node_alive': 0x08,
     }
 
-    def __init__(self, type: int, message: bytes, source_address: int, destination_address: int, ttl=20):
+    def __init__(self, type: int, message: bytes, source_address: int, destination_address: int, last_hop: int, ttl=20):
         self.type = type
+        self.last_hop = last_hop
         self.source_address = source_address
         self.destination_address = destination_address
         self.ttl = ttl
@@ -26,6 +27,7 @@ class Frame:
     def serialize(self) -> bytes:
         return b''.join([
             self.type.to_bytes(1, 'big'),
+            self.last_hop.to_bytes(2, 'big'),
             self.source_address.to_bytes(2, 'big'),
             self.destination_address.to_bytes(2, 'big'),
             self.data
@@ -34,11 +36,18 @@ class Frame:
     @staticmethod
     def deserialize(frame: bytes):
         type = frame[0]
-        source_address = int.from_bytes(frame[1:3], 'big')
-        destination_address = int.from_bytes(frame[3:5], 'big')
-        message = frame[5:]
+        last_hop = int.from_bytes(frame[1:3], 'big')
+        source_address = int.from_bytes(frame[3:5], 'big')
+        destination_address = int.from_bytes(frame[5:7], 'big')
+        message = frame[7:]
 
-        return Frame(type, message, source_address, destination_address)
+        return Frame(
+            type=type, 
+            message=message, 
+            last_hop=last_hop,
+            source_address=source_address, 
+            destination_address=destination_address,
+        )
 
 
 class INetworkController:
@@ -67,7 +76,7 @@ class INetworkController:
             else:
                 time.sleep(0.001)
                 
-    def _send_message(self, type: int, message: bytes, addr=255):
+    def _send_message(self, type: int, message: bytes, addr: int):
         """ send a message to the specified address """
         raise NotImplementedError()
 
@@ -79,9 +88,9 @@ class INetworkController:
         """ stop the network controller """
         self.task.cancel()
 
-    def send_message(self, type: int, message: bytes, addr=255):
+    def send_message(self, type: int, message: bytes, addr=0xffff, last_hop=0x0000):
         """ send a message to the specified address """
-        self.q.append((type, message, addr))
+        self.q.append((type, message, addr, last_hop))
 
     def register_callback(self, addr: int, callback):
         """ register a callback for the specified address """

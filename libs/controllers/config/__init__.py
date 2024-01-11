@@ -38,7 +38,7 @@ class ConfigController:
             # parse the message
             config = deserialize_dict(frame.data)
             # apply the diff to the config
-            self._ledger.apply_diff(config, frame.source_address)
+            self._ledger.apply_diff(config, frame.last_hop)
 
     def update_config(self, key, value):
         # aply update
