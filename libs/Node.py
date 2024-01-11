@@ -89,23 +89,23 @@ class Node():
     def store_measurement_frame(self, frame: Frame):
         # check if node is in ledger
         if frame.source_address not in self.config_controller.ledger:
-            # request a config
-            print('not in ledger, requesting config')
             return
 
         # check if we should store
-        if self.replication_controller.should_replicate(frame.source_address):
+        if self.replication_controller.are_replicating(frame.source_address):
+            print('are replicating')
             measurement = Measurement.decode(frame.data)
             return self.store_measurement(measurement)
 
         # check if it needs new replications
-        if self.replication_controller.are_replicating(frame.source_address):
+        if self.replication_controller.should_replicate(frame.source_address):
+            print('should replicate')
             # check if we have enough replications
             if len(self.replication_controller.config_controller.ledger[frame.source_address].replications) < \
                     self.replication_controller.config_controller.ledger[frame.source_address].replication_count:
                 # send a bid
                 self.network_controller.send_message(
-                    3, frame.ttl.to_bytes(4, 'big'), frame.source_address)
+                    Frame.FRAME_TYPES['replication'], frame.ttl.to_bytes(4, 'big'), frame.source_address)
                 return
 
     def store_measurement(self, measurement: Measurement, address=None):

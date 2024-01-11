@@ -41,16 +41,11 @@ class ConfigController:
             self._ledger.apply_diff(config, frame.source_address)
 
     def update_config(self, key, value):
-        # clone the config
-        new_config = self.clone_config()
-        # update the config
-        new_config[key] = value
+        # aply update
+        self._config[key] = value
 
         # broadcast the new config
-        self.broadcast_config(new_config=new_config)
-
-        # apply the new config to our config
-        self._config = new_config
+        self.broadcast_config()
 
     def clone_config(self):
         # clone the config

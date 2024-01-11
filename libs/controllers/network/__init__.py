@@ -4,6 +4,7 @@ import time
 
 
 class Frame:
+    # max amount of frames is 0x0F(16)
     FRAME_TYPES = {
         'discovery': 0x00,
         'measurment': 0x01,
