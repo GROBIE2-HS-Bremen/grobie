@@ -3,14 +3,16 @@ from libs.controllers.neighbours import NeighboursController
 from libs.controllers.network import Frame, INetworkController
 from libs.controllers.network import Frame
 
-
+#TODO ensure that the source and destination addresses are forwarded correctly. they should
+# be the same as the original frame, not the current node's address. Also, last_address should probably be handled differently.
+#TODO add a hop_count to the frame, and increment it each time the frame is forwarded. This will allow the node to know how many hops it is from the destination.
 
 class RoutingController:
     def __init__(self, node_config: NodeConfigData, neighboursController: NeighboursController, networkController: INetworkController) -> None:
         self.node_config = node_config
         self.neighbours = neighboursController
         self.network = networkController
-        self.routes: dict[int, tuple[int, int]] = {}
+        self.routes: dict[int, tuple[int, int]] = {}    # destination: (next_hop, hops)
 
     async def getRoute(self, address: int):
             """
@@ -59,9 +61,10 @@ class RoutingController:
         if frame.type != Frame.FRAME_TYPES['route_request']:
             return
         
+        deserialized_frame = Frame.deserialize(frame)
         address = self.node_config.addr
-        source = Frame.deserialize(frame.source_address)
-        destination = Frame.deserialize(frame.destination_address)
+        source = deserialized_frame.source_address
+        destination = deserialized_frame.destination_address
         last_address = NodeConfigData.deserialize(frame.data).addr
 
         if source not in self.routes:
@@ -93,9 +96,10 @@ class RoutingController:
         if frame.type != Frame.FRAME_TYPES['route_reply']:
             return
 
+        deserialized_frame = Frame.deserialize(frame)
         address = self.node_config.addr
-        destination = Frame.deserialize(frame.destination_address)
-        source = Frame.deserialize(frame.source_address)
+        source = deserialized_frame.source_address
+        destination = deserialized_frame.destination_address
         last_address = NodeConfigData.deserialize(frame.data).addr
 
         if source not in self.routes:
