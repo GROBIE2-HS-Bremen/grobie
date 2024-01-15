@@ -6,3 +6,4 @@ channel = 4 # 0-80
 rssi_enabled = True # True, False
 transmission_method = True # True = Transparent, False = Fixed
 lbt_enabled = True # True, False
+

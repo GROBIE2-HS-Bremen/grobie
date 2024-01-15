@@ -126,7 +126,8 @@ WOR Cycle:                  {self.wor_cycle}ms"""
         self.serial.flush()
 
     def send(self, address: bytes, text: bytes) -> None:
-        self.write(b''.join([address, self.channel.to_bytes(1, 'little'), text]))
+        self.write(
+            b''.join([address, self.channel.to_bytes(1, 'little'), text]))
 
     def broadcast(self, text: bytes) -> None:
         self.send(b'\xff\xff', text)
@@ -154,6 +155,9 @@ WOR Cycle:                  {self.wor_cycle}ms"""
         self.lbt_enabled = msg[8] & 0x10 == 0x10
         self.wor_cycle = WOR_CYCLE[msg[8] & 0x07]
 
+        sleep_ms(100)
+        self.read()
+
         sleep_ms(1000)
     def save(self) -> None:
         header = b'\xc0\x00\x06'
@@ -162,7 +166,8 @@ WOR Cycle:                  {self.wor_cycle}ms"""
         if len(baud_rate) is not 1:
             raise Exception('Baud rate not found')
 
-        serial_parity_bit = [k for k, v in SERIAL_PARITY_BIT.items() if v == self.serial_parity_bit]
+        serial_parity_bit = [
+            k for k, v in SERIAL_PARITY_BIT.items() if v == self.serial_parity_bit]
         if len(serial_parity_bit) is 0:
             raise Exception('seraial parity bit not found')
 
@@ -174,7 +179,8 @@ WOR Cycle:                  {self.wor_cycle}ms"""
         if len(sub_packet) is not 1:
             raise Exception('Sub packet not found')
 
-        transmit_power = [k for k, v in TRANSMIT_POWER.items() if v == self.transmit_power]
+        transmit_power = [
+            k for k, v in TRANSMIT_POWER.items() if v == self.transmit_power]
         if len(transmit_power) is not 1:
             raise Exception('Transmit power not found')
 
@@ -183,10 +189,12 @@ WOR Cycle:                  {self.wor_cycle}ms"""
             raise Exception('Wor cycle not found')
 
         reg02 = baud_rate[0] | serial_parity_bit[0] | air_rate[-1]
-        reg03 = sub_packet[0] | (0x20 if self.rssi_ambient_noice_enable else 0x00) | transmit_power[0]
+        reg03 = sub_packet[0] | (
+            0x20 if self.rssi_ambient_noice_enable else 0x00) | transmit_power[0]
         reg05 = (0x80 if self.rssi_enabled else 0x00) | (0x40 if self.transmission_method else 0x00) | (
             0x10 if self.lbt_enabled else 0x00) | wor_cycle[0]
 
         self.write(b''.join([header, self.address, reg02.to_bytes(1, 'little'), reg03.to_bytes(1, 'little'),
                              self.channel.to_bytes(1, 'little'), reg05.to_bytes(1, 'little')]))
+        sleep_ms(100)
         self.read()
