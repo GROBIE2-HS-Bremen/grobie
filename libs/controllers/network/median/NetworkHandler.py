@@ -34,7 +34,6 @@ class NetworkHandler():
             self.rcv_ack = True
         
     
-    
     def wait_for_ack(self,message,addr,ctr=1):
         """
         Check buffer to see if ACK has been received.
@@ -85,7 +84,7 @@ class NetworkHandler():
         
         # end-to-end acks. If the message was intended for this node then send ack back.
         elif message.destination_address == self.nc.address:
-            print(f"Sending ACK to {message.source_address}")
+            print(f"Sending ACK to node {message.source_address} from node {self.nc.address}")
             ackmsg = Frame(type=Frame.FRAME_TYPES['acknowledgement'], message=b'', source_address=self.nc.address,
                         destination_address=message.source_address, ttl=20
                         ).serialize()

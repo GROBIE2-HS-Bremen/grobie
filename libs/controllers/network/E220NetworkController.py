@@ -44,13 +44,12 @@ class E220NetworkController(INetworkController):
                 self.on_message(d)
             await asyncio.sleep(0.1)
     
-    
 
     def handle_packet(self,frame,sessions={}):
         # More frames incoming and session ID is also set.
 
         # First session, add first packet as dict to sessions.
-        if frame.frame_num and frame.ses_num > 1:
+        if frame.frame_num and frame.ses_num != 0:
             # Make session if it does not exists
             if not sessions.get(frame.ses_num):
                 sessions[frame.ses_num] = frame.__dict__
@@ -101,15 +100,13 @@ class E220NetworkController(INetworkController):
                 start += datasize
                 end += datasize
                 
-
                 if start > length_msg:
                     break
         else:
             ses_num = 0
-            frame_num = 0
             data_splits = [message]
 
-        print(data_splits)
+        print(f"Sending package(s) - {data_splits}")
         for msg in data_splits:
             frame = Frame(type,msg,self.address,addr,ttl,ses_num,frame_num)
             self.network_handler.transmit_packet(frame)
