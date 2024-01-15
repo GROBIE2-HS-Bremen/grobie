@@ -12,7 +12,7 @@ class CRC:
         self.table = array.array("H", [CRC.table(i) for i in range(256)])
 
     @staticmethod
-    def table(c: int):
+    def table(c: int) -> int:
         crc = c
         for j in range(8):
             if crc & 0x01:
@@ -22,22 +22,22 @@ class CRC:
 
         return crc
 
-    def checksum(self, data: bytes):
+    def checksum(self, data: bytes) -> bytes:
         crc = PRESET
         for c in data:
             crc = (crc >> 8) ^ self.table[(crc ^ c) & 0xFF]
 
         return crc.to_bytes(CRC_LENGTH, 'big')
 
-    def verify(self, data: bytes, checksum: bytes):
+    def verify(self, data: bytes, checksum: bytes) -> bool:
         return self.checksum(data) == checksum
 
-    def encode(self, data: bytes):
+    def encode(self, data: bytes) -> bytearray:
         combine = data + self.checksum(data)
 
         return self.corrector.encode(combine)
 
-    def decode(self, frame: bytes):
+    def decode(self, frame: bytes) -> bytearray | None:
         try:
             decoded = self.corrector.decode(frame)[0]
 
@@ -64,6 +64,7 @@ class CRC:
 #
 # # Simulate errors
 # encoded_data[2] ^= 0xFF  # introduce an error
+# encoded_data[5] ^= 0xFF  # introduce an error
 #
 # print("corrupt data:", encoded_data)
 #
