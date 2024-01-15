@@ -1,4 +1,5 @@
 import asyncio
+import random
 from libs.E220 import E220, MODE_CONFIG, MODE_NORMAL
 from libs.controllers.network import Frame, INetworkController
 from libs.controllers.network.median.NetworkHandler import Frame, NetworkHandler
@@ -47,22 +48,22 @@ class E220NetworkController(INetworkController):
         """ send a message to the specified address splits into multiple messages if needed.
         Ebyte module sends data in one continous message if data is 199 bytes or lower.
         """
-        """
-        framenr = 0
+        
+        frame_num = 0
         length_msg = len(message)
 
         if length_msg > datasize:
-            framenr = length_msg // datasize + 1
-            datasplits = [message[i:i+framenr] for i in range(0, len(message), framenr)]
+            ses_num = random.randint(255)
+            frame_num = length_msg // datasize + 1
+            data_splits = [message[i:i+frame_num] for i in range(0, len(message), frame_num)]
             
         else:
-            datasplits = [message]
+            data_splits = [message]
             
-        for msg in datasplits:
-        """
-        frame = Frame(type,message,self.address,addr,ttl)
-        self.network_handler.transmit_packet(frame)
-        #framenr -= 1
+        for msg in data_splits:
+            frame = Frame(type,msg,self.address,addr,ttl,ses_num,frame_num)
+            self.network_handler.transmit_packet(frame)
+            frame_num -= 1
 
     @property
     def address(self) -> int:

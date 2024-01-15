@@ -1,5 +1,6 @@
 import asyncio
 from libs.E220 import E220
+from libs.controllers.network.median.NetworkHandler import NetworkHandler
 import _thread
 import time
 import math
@@ -18,24 +19,26 @@ class Frame:
         'node_alive': 0x08,
     }
 
-    def __init__(self, type: int, message: bytes, source_address: int, destination_address: int, ttl=20,framenum=1):
+    def __init__(self, type: int, message: bytes, source_address: int, destination_address: int, ttl=20,frame_num=1,ses_num=1):
         self.type = type
         self.source_address = source_address
         self.destination_address = destination_address
         self.ttl = ttl
+        self.frame_num = frame_num
+        self.ses_num = ses_num
         self.data = message
-        self.framenum = framenum
   
 
     def serialize(self) -> bytes:
         
         return b''.join([
             self.type.to_bytes(1, 'big'), 
-            self.destination_address.to_bytes(2, 'big'),
             self.source_address.to_bytes(2, 'big'),
+            self.destination_address.to_bytes(2, 'big'),
             self.ttl.to_bytes(3, 'big'),
+            self.frame_num.to_bytes(1,'big'),
+            self.ses_num.to_bytes(2,'big'),
             self.data,
-            #self.framenum.to_bytes(2, 'big'),
             #self.crc.to_bytes(2, 'big'),
             ])
         
@@ -57,11 +60,12 @@ class INetworkController:
     task: asyncio.Task
     callbacks: dict[int, list]
     q: list
+    network = NetworkHandler
 
-    def __init__(self):
+    def __init__(self,network):
+        self.network = network
         self.callbacks = {}
         self.q = []
-        self.sessions = {}
 
     def start(self):
         """ start the network controller """
@@ -101,11 +105,20 @@ class INetworkController:
 
         self.callbacks[type].append(callback)
 
+    
+
     def on_message(self, message: bytes):
         """ called when a message is recieved """
         
         frame = Frame.deserialize(message)
+        result = self.network.handle_packet(frame)
 
+        if result is None:
+            self.network.transmit_ack(frame)
+            return
+        
+        frame = result
+            
         
 
         # get all the callback functions

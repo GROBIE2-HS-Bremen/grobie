@@ -1,7 +1,9 @@
 import asyncio
 from libs.E220 import E220
-from libs.controllers.network import Frame,INetworkController
+from libs.controllers.network import Frame,INetworkController,E220NetworkController
+
 import time
+
 
 
 class NetworkHandler():
@@ -10,12 +12,16 @@ class NetworkHandler():
     """
 
     e220: E220
+    
 
     def __init__(self,e220,max_tries=3) -> None:
         self.e220 = e220
+        self.nc = INetworkController
         self.max_tries = max_tries
+
         self.rcv_ack = False
         self.rxSegments = bytearray()
+
 
 
     
@@ -27,6 +33,30 @@ class NetworkHandler():
         if message.type == Frame.FRAME_TYPES['acknowledgement']:
             self.rcv_ack = True
         
+    def handle_packet(self,frame,sessions={}):
+        # More frames incoming and session ID is also set.
+
+        # First session, add first packet as dict to sessions.
+        if frame.frame_num and frame.ses_num > 1:
+            # Make session if it does not exists
+            if not sessions.get(frame.ses_num):
+                sessions[frame.ses_num] = frame.__dict__
+            else:
+                sessions[frame.ses_num]['data'] += frame.data
+
+        # If session exists and last packet we assemble everything and return it.
+        elif frame.ses_num in sessions and frame.frame_num == 0:
+            packet = sessions[frame.ses_num]
+            return Frame(
+                type=packet.type,
+                message=packet.data,
+                source_address=packet.source_address,
+                destination_address=packet.destination_address,
+                ttl=packet.ttl
+            )
+        
+        else:
+            return frame
     
     def wait_for_ack(self,message,addr,ctr=1):
         """
@@ -56,7 +86,6 @@ class NetworkHandler():
         """
 
         message = frame.serialize()
-        # 0xff00
         addr = (frame.destination_address).to_bytes(2,'big')
 
         if frame.destination_address == 255:
@@ -77,11 +106,13 @@ class NetworkHandler():
         if message.type == Frame.FRAME_TYPES['acknowledgement'] or message.destination_address == 255:
             return
         
-        print(f"Sending ACK to {message.source_address}")
-        ackmsg = Frame(type=Frame.FRAME_TYPES['acknowledgement'], message=b'', source_address=message.destination_address,
-                    destination_address=message.source_address, ttl=20
-                    ).serialize()
-        self.e220.send(message.source_address.to_bytes(2,'big'),ackmsg)
+        # end-to-end acks. If the message was intended for this node then send ack back.
+        elif message.destination_address == self.nc.address:
+            print(f"Sending ACK to {message.source_address}")
+            ackmsg = Frame(type=Frame.FRAME_TYPES['acknowledgement'], message=b'', source_address=self.nc.address,
+                        destination_address=message.source_address, ttl=20
+                        ).serialize()
+            self.e220.send(message.source_address.to_bytes(2,'big'),ackmsg)
         
         
          

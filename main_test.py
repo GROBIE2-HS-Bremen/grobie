@@ -46,7 +46,7 @@ async def testendpoint():
     await asyncio.sleep(1)
     node.network_controller.send_message(1,b'',3)
 
-loop.create_task(testendpoint())
+#loop.create_task(loop())
 
 
 loop.run_forever()
