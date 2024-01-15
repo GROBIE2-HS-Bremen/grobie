@@ -4,7 +4,7 @@ from libs.external.reedsolo import *
 
 class CRC:
     def __init__(self):
-        self.corrector = RSCodec(8)
+        self.corrector = RSCodec(5)
         self.table = array.array("H", [CRC.table(i) for i in range(256)])
 
     @staticmethod
