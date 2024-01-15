@@ -43,88 +43,88 @@ node = Node(
     node_config=node_config,
 )
 
-async def a():
-    import libs.external.umsgpack as umsgpack
+# async def a():
+#     import libs.external.umsgpack as umsgpack
 
-    await asyncio.sleep(5)
+#     await asyncio.sleep(5)
 
-    addr = 22
-    print('\n'*4)
+#     addr = 22
+#     print('\n'*4)
 
 
-    # request the config of the node 
-    await asyncio.sleep(2)
-    print('requesting config' + '*'*12)
-    f = Frame(Frame.FRAME_TYPES['request_config'], b'', addr, 0x0004, addr)
-    node.network_controller.on_message(
-        f.serialize()
-    )
-    print('\n\n')
+#     # request the config of the node 
+#     await asyncio.sleep(2)
+#     print('requesting config' + '*'*12)
+#     f = Frame(Frame.FRAME_TYPES['request_config'], b'', addr, 0x0004, addr)
+#     node.network_controller.on_message(
+#         f.serialize()
+#     )
+#     print('\n\n')
 
-    measurement = Frame(
-        Frame.FRAME_TYPES['measurement'],
-        umsgpack.dumps({
-            'timestamp': 123123123,
-            'sensor': 0.1324123,
-            'value': 1
-        }),
-        addr, 0xffff, addr
-    )
-    print('\n\n')
+#     measurement = Frame(
+#         Frame.FRAME_TYPES['measurement'],
+#         umsgpack.dumps({
+#             'timestamp': 123123123,
+#             'sensor': 0.1324123,
+#             'value': 1
+#         }),
+#         addr, 0xffff, addr
+#     )
+#     print('\n\n')
 
-    print('sending measurement (not in ledger)' + '*'*12)
-    # when receiving a measurement we should send a request_config(id: 0) frame 
-    node.network_controller.on_message(
-        measurement.serialize()
-    )
+#     print('sending measurement (not in ledger)' + '*'*12)
+#     # when receiving a measurement we should send a request_config(id: 0) frame 
+#     node.network_controller.on_message(
+#         measurement.serialize()
+#     )
 
-    # if we recieve a config we should update it in the ledger
-    await asyncio.sleep(2)
-    cnf = NodeConfigData(
-        addr=addr,
-        measurement_interval=100,
-        replication_count=4,
-        replications={
-            2: 0,
-            3: 20
-        }
-    )
+#     # if we recieve a config we should update it in the ledger
+#     await asyncio.sleep(2)
+#     cnf = NodeConfigData(
+#         addr=addr,
+#         measurement_interval=100,
+#         replication_count=4,
+#         replications={
+#             2: 0,
+#             3: 20
+#         }
+#     )
 
-    f = Frame(Frame.FRAME_TYPES['node_joining'], cnf.serialize(), addr, 0xffff, addr)
-    print('sending config' + '*'*12)
-    node.network_controller.on_message(
-        f.serialize()
-    )
-    await asyncio.sleep(1)
-    print(node.config_controller.ledger.ledger)
-    print('\n\n')
+#     f = Frame(Frame.FRAME_TYPES['node_joining'], cnf.serialize(), addr, 0xffff, addr)
+#     print('sending config' + '*'*12)
+#     node.network_controller.on_message(
+#         f.serialize()
+#     )
+#     await asyncio.sleep(1)
+#     print(node.config_controller.ledger.ledger)
+#     print('\n\n')
 
-    # # if we send a measurement we should send a replication bid 
-    await asyncio.sleep(2)
-    print('sending measurement (in ledger) not replicating' + '*'*12)
-    node.network_controller.on_message(
-        measurement.serialize()
-    )
+#     # # if we send a measurement we should send a replication bid 
+#     await asyncio.sleep(2)
+#     print('sending measurement (in ledger) not replicating' + '*'*12)
+#     node.network_controller.on_message(
+#         measurement.serialize()
+#     )
 
-    print('\n\n')
+#     print('\n\n')
 
-    await asyncio.sleep(2)
-    cnf.replications[4]= 2
-    f = Frame(Frame.FRAME_TYPES['node_joining'], cnf.serialize(), addr, 0xffff, addr)
-    print('sending config' + '*'*12)
-    node.network_controller.on_message(
-        f.serialize()
-    )
+#     await asyncio.sleep(2)
+#     cnf.replications[4]= 2
+#     f = Frame(Frame.FRAME_TYPES['node_joining'], cnf.serialize(), addr, 0xffff, addr)
+#     print('sending config' + '*'*12)
+#     node.network_controller.on_message(
+#         f.serialize()
+#     )
 
-    print('\n\n')
+#     print('\n\n')
 
-    # if we send a measurement it should be saved
-    await asyncio.sleep(2)
-    print('sending measurement (in ledger)' + '*'*12)
-    node.network_controller.on_message(
-        measurement.serialize()
-    )
+#     # if we send a measurement it should be saved
+#     await asyncio.sleep(2)
+#     print('sending measurement (in ledger)' + '*'*12)
+#     node.network_controller.on_message(
+#         measurement.serialize()
+#     )
 
-loop.create_task(a())
+# loop.create_task(a())
 
 loop.run_forever()
