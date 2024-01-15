@@ -1,14 +1,10 @@
 import array
 from libs.external.reedsolo import *
 
-PRESET = 0xFFFF
-POLYNOMIAL = 0xA001
-CRC_LENGTH = 2
-
 
 class CRC:
     def __init__(self):
-        self.corrector = RSCodec(5)
+        self.corrector = RSCodec(8)
         self.table = array.array("H", [CRC.table(i) for i in range(256)])
 
     @staticmethod
@@ -16,18 +12,18 @@ class CRC:
         crc = c
         for j in range(8):
             if crc & 0x01:
-                crc = (crc >> 1) ^ POLYNOMIAL
+                crc = (crc >> 1) ^ 0xA001
             else:
                 crc = crc >> 1
 
         return crc
 
     def checksum(self, data: bytes) -> bytes:
-        crc = PRESET
+        crc = 0xFFFF
         for c in data:
             crc = (crc >> 8) ^ self.table[(crc ^ c) & 0xFF]
 
-        return crc.to_bytes(CRC_LENGTH, 'big')
+        return crc.to_bytes(2, 'big')
 
     def verify(self, data: bytes, checksum: bytes) -> bool:
         return self.checksum(data) == checksum
@@ -41,8 +37,8 @@ class CRC:
         try:
             decoded = self.corrector.decode(frame)[0]
 
-            crc = decoded[-CRC_LENGTH:]
-            data = decoded[:-CRC_LENGTH]
+            crc = decoded[-2:]
+            data = decoded[:-2]
 
             if self.verify(data, crc):
                 return data
