@@ -51,25 +51,25 @@ class CRC:
         except reedsolo.ReedSolomonError:
             return None
 
-
-crc = CRC()
-
-# Encode data
-original_data = b"hello world"
-encoded_data = crc.encode(original_data)
-print("Encoded data:", encoded_data)
-
-print(len(encoded_data))
-
-# Simulate errors
-encoded_data[2] ^= 0xFF  # introduce an error
-
-print("corrupt data:", encoded_data)
-
-# Decode data
-decoded_data = crc.decode(encoded_data)
-
-if decoded_data is not None:
-    print("Decoded data:", decoded_data)
-else:
-    print("Error: Unable to correct the data.")
+# Testing
+# crc = CRC()
+#
+# # Encode data
+# original_data = b"hello world"
+# encoded_data = crc.encode(original_data)
+# print("Encoded data:", encoded_data)
+#
+# print(len(encoded_data))
+#
+# # Simulate errors
+# encoded_data[2] ^= 0xFF  # introduce an error
+#
+# print("corrupt data:", encoded_data)
+#
+# # Decode data
+# decoded_data = crc.decode(encoded_data)
+#
+# if decoded_data is not None:
+#     print("Decoded data:", decoded_data)
+# else:
+#     print("Error: Unable to correct the data.")
