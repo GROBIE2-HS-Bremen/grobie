@@ -79,7 +79,7 @@ class NeighboursController():
         """
         Handles a node being alive, updates the config.
         """
-        self.last_update[frame.last_hop] = time()
+        self.last_update[frame.source_address] = time()
 
         if frame.type != Frame.FRAME_TYPES['node_alive']:
             return
