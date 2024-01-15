@@ -80,17 +80,36 @@ class E220NetworkController(INetworkController):
         
         frame_num = 0
         length_msg = len(message)
+        data_splits = []
         
         if length_msg > datasize:
+            # Random sessionnumber
             ses_num = random.randint(1,255)
-            frame_num = length_msg // datasize + 1
-            data_splits = [message[i:i+frame_num] for i in range(0, len(message), frame_num)]
             
+            # Amount of frames to send
+            frame_num = length_msg // datasize + 1
+            
+            start = 0
+            end = datasize
+            
+
+            while True:
+                if end > length_msg:
+                    end = length_msg
+
+                data_splits.append(message[start:end])
+                start += datasize
+                end += datasize
+                
+
+                if start > length_msg:
+                    break
         else:
             ses_num = 0
             frame_num = 0
             data_splits = [message]
-            
+
+        print(data_splits)
         for msg in data_splits:
             frame = Frame(type,msg,self.address,addr,ttl,ses_num,frame_num)
             self.network_handler.transmit_packet(frame)
