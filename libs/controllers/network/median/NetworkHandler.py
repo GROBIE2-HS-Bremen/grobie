@@ -1,6 +1,6 @@
 import asyncio
 from libs.E220 import E220
-from libs.controllers.network import Frame,INetworkController,E220NetworkController
+from libs.controllers.network import Frame, INetworkController
 
 import time
 
@@ -33,30 +33,7 @@ class NetworkHandler():
         if message.type == Frame.FRAME_TYPES['acknowledgement']:
             self.rcv_ack = True
         
-    def handle_packet(self,frame,sessions={}):
-        # More frames incoming and session ID is also set.
-
-        # First session, add first packet as dict to sessions.
-        if frame.frame_num and frame.ses_num > 1:
-            # Make session if it does not exists
-            if not sessions.get(frame.ses_num):
-                sessions[frame.ses_num] = frame.__dict__
-            else:
-                sessions[frame.ses_num]['data'] += frame.data
-
-        # If session exists and last packet we assemble everything and return it.
-        elif frame.ses_num in sessions and frame.frame_num == 0:
-            packet = sessions[frame.ses_num]
-            return Frame(
-                type=packet.type,
-                message=packet.data,
-                source_address=packet.source_address,
-                destination_address=packet.destination_address,
-                ttl=packet.ttl
-            )
-        
-        else:
-            return frame
+    
     
     def wait_for_ack(self,message,addr,ctr=1):
         """

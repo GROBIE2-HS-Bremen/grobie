@@ -2,7 +2,7 @@ import asyncio
 import random
 from libs.E220 import E220, MODE_CONFIG, MODE_NORMAL
 from libs.controllers.network import Frame, INetworkController
-from libs.controllers.network.median.NetworkHandler import Frame, NetworkHandler
+from libs.controllers.network.median.NetworkHandler import NetworkHandler
 
 
 class E220NetworkController(INetworkController):
@@ -43,7 +43,36 @@ class E220NetworkController(INetworkController):
             if d:
                 self.on_message(d)
             await asyncio.sleep(0.1)
+    
+    
 
+    def handle_packet(self,frame,sessions={}):
+        # More frames incoming and session ID is also set.
+
+        # First session, add first packet as dict to sessions.
+        if frame.frame_num and frame.ses_num > 1:
+            # Make session if it does not exists
+            if not sessions.get(frame.ses_num):
+                sessions[frame.ses_num] = frame.__dict__
+            else:
+                sessions[frame.ses_num]['data'] += frame.data
+            self.network_handler.transmit_ack(frame)
+
+
+        # If session exists and last packet we assemble everything and return it.
+        elif frame.ses_num in sessions and frame.frame_num == 0:
+            packet = sessions[frame.ses_num]
+            return Frame(
+                type=packet.type,
+                message=packet.data,
+                source_address=packet.source_address,
+                destination_address=packet.destination_address,
+                ttl=packet.ttl
+            )
+        
+        else:
+            return frame
+        
     def send_message(self, type: int, message: bytes, addr=255,ttl=20,datasize=188):
         """ send a message to the specified address splits into multiple messages if needed.
         Ebyte module sends data in one continous message if data is 199 bytes or lower.
@@ -51,13 +80,15 @@ class E220NetworkController(INetworkController):
         
         frame_num = 0
         length_msg = len(message)
-
+        
         if length_msg > datasize:
-            ses_num = random.randint(255)
+            ses_num = random.randint(1,255)
             frame_num = length_msg // datasize + 1
             data_splits = [message[i:i+frame_num] for i in range(0, len(message), frame_num)]
             
         else:
+            ses_num = 0
+            frame_num = 0
             data_splits = [message]
             
         for msg in data_splits:

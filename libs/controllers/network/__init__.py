@@ -1,6 +1,5 @@
 import asyncio
 from libs.E220 import E220
-from libs.controllers.network.median.NetworkHandler import NetworkHandler
 import _thread
 import time
 import math
@@ -71,10 +70,8 @@ class INetworkController:
     task: asyncio.Task
     callbacks: dict[int, list]
     q: list
-    network = NetworkHandler
 
-    def __init__(self,network):
-        self.network = network
+    def __init__(self):
         self.callbacks = {}
         self.q = []
 
@@ -104,6 +101,7 @@ class INetworkController:
         """ stop the network controller """
         self.task.cancel()
 
+
     def send_message(self, type: int, message: bytes, addr=255):
         """ send a message to the specified address """
         self.q.append((type, message, addr))
@@ -116,22 +114,21 @@ class INetworkController:
 
         self.callbacks[type].append(callback)
 
+    def handle_packet(self,frame):
+        raise NotImplementedError()
     
-
     def on_message(self, message: bytes):
         """ called when a message is recieved """
         
         frame = Frame.deserialize(message)
-        result = self.network.handle_packet(frame)
+        frame = self.handle_packet(frame)
 
-        if result is None:
-            self.network.transmit_ack(frame)
+        # No frame to give back to callbacks
+        if frame is None: 
             return
         
-        frame = result
             
-        
-
+    
         # get all the callback functions
         # get the callbacks for the wildcard
         callbacks = self.callbacks.get(-1, [])
