@@ -7,7 +7,7 @@ class Frame:
     # max amount of frames is 0x0F(16)
     FRAME_TYPES = {
         'request_config': 0x00,
-        'measurment': 0x01,
+        'measurement': 0x01,
         'config': 0x02,
         'replication': 0x03,
         'node_joining': 0x06,

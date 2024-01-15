@@ -30,7 +30,7 @@ class Node():
                 lambda m: print(type(m), str(m)),
                 lambda measurement: self.store_measurement(measurement),
                 lambda measurement: network_controller.send_message(
-                    1, measurement.encode())
+                    Frame.FRAME_TYPES['measurement'], measurement.encode())
             ])
 
         self.config_controller = ConfigController(
@@ -53,15 +53,17 @@ class Node():
         self.network_controller.register_callback(-1, lambda frame: print(
             f'received a message of type {frame.type} from node {frame.source_address} for node {frame.destination_address}'))  # -1 is a wildcard type
 
-        self.network_controller.register_callback(Frame.FRAME_TYPES['measurment'],
+        self.network_controller.register_callback(Frame.FRAME_TYPES['measurement'],
                                                   self.store_measurement_frame)  # decide if we want to store the measurement
-        self.network_controller.register_callback(Frame.FRAME_TYPES['request_config'],
-                                                  lambda frame: self.network_controller.send_message(
-                                                      Frame.FRAME_TYPES['config'], 
-                                                      self.config_controller.config.serialize(), 
-                                                      frame.source_address
-                                                    )
-                                                )
+        self.network_controller.register_callback(
+            Frame.FRAME_TYPES['request_config'],
+            lambda frame: self.network_controller.send_message(
+                Frame.FRAME_TYPES['node_joining'], 
+                self.config_controller.config.serialize(), 
+                frame.source_address,
+            )
+        )
+
         self.network_controller.register_callback(Frame.FRAME_TYPES['config'],
                                                   self.config_controller.handle_message)  # handle config changes
         self.network_controller.register_callback(Frame.FRAME_TYPES['replication'],
