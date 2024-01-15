@@ -1,4 +1,4 @@
-from libs.controllers.config import NodeConfigData
+from libs.controllers.config.NodeConfigData import NodeConfigData
 
 
 class Ledger:

@@ -37,7 +37,8 @@ class E220NetworkController(INetworkController):
                 self.on_message(d)
             await asyncio.sleep(0.1)
 
-    def _send_message(self, type: int, message: bytes, last_hop, addr=255):
+    def _send_message(self, type: int, message: bytes, addr, last_hop):
+        print(f'sending message of type {type} to {addr}')
         frame = Frame(type, message, self.address, addr, last_hop)
         self.e220.send(addr.to_bytes(2, 'big'), frame.serialize())
 

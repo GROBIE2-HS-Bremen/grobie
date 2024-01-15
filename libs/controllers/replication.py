@@ -33,7 +33,10 @@ class ReplicationController:
         """
 
         # check if we are replicating this node
-        return node_addr in self.replicating_nodes
+        replicators = self.config_controller.ledger[node_addr].replications.keys()
+        print(replicators, self.config_controller.config.addr)
+        return self.config_controller.config.addr in replicators
+             
 
     def should_replicate(self, node_addr: int) -> bool:
         """ 

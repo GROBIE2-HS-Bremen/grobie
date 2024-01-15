@@ -53,6 +53,8 @@ class NeighboursController():
         """
         if frame.type != Frame.FRAME_TYPES['node_joining']:
             return
+        
+        print(frame.data)
 
         node = NodeConfigData.deserialize(frame.data)
         self.connections[node.addr] = node
@@ -60,6 +62,9 @@ class NeighboursController():
         self.network.send_message(
             Frame.FRAME_TYPES['node_alive'], self.config_controller.config.serialize(), node.addr)
         print("Connection created, current table: ", self.connections)
+
+        # set the config in the ledger
+        self.config_controller.ledger.ledger[frame.source_address] = node
 
     def handle_leave(self, frame: Frame):
         """
@@ -84,6 +89,7 @@ class NeighboursController():
         if frame.type != Frame.FRAME_TYPES['node_alive']:
             return
 
+        print(frame)
         node = NodeConfigData.deserialize(frame.data)
         self.connections[frame.source_address] = node
 
