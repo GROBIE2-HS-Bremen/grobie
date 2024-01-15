@@ -23,15 +23,19 @@ class Node():
         self.storage_controller = storage_controller
         self.network_controller = network_controller
 
-        self.init_storage()
+        # mount sd card
+        self.storage_controller.mount('/sd')
 
+        # initialize controllers
         self.measurement_controller = MeasurementController(
             sensors=self.sensors,
             actions=[
                 lambda m: print(type(m), str(m)),
                 lambda measurement: self.store_measurement(measurement),
                 lambda measurement: network_controller.send_message(
-                    1, measurement.encode())
+                        Frame.FRAME_TYPES['measurment'], 
+                        measurement.encode()
+                    )
             ])
 
         self.config_controller = ConfigController(
@@ -43,12 +47,13 @@ class Node():
             network_controller
         )
 
-        self.replication_controller = ReplicationController(
-            self.config_controller)
+        self.replication_controller = ReplicationController(self.config_controller)
 
-        filepath = '/sd/data.csv'
-        self.database_controller = CsvDatabase(
+        # initialize database
+        filepath = '/sd/data.bin'
+        self.database_controller = BinarKVDatabase(
             filepath, self.storage_controller)
+
 
         # Register message callbacks
         self.network_controller.register_callback(-1, lambda frame: print(
@@ -69,8 +74,6 @@ class Node():
         self.network_controller.register_callback(-1,
                                                   self.neighbours_controller.handle_alive)
 
-        print(self.network_controller.callbacks)
-
         print('node has been initialized, starting controllers')
 
         # make and send measuremnt every 1 second
@@ -82,9 +85,6 @@ class Node():
 
         self.neighbours_controller.broadcast_join()
         print('Sended a broadcast of config')
-
-    def init_storage(self):
-        self.storage_controller.mount('/sd')
 
     def store_measurement_frame(self, frame: Frame):
         # check if node is in ledger
