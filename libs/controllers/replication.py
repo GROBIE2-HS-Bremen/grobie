@@ -45,6 +45,9 @@ class ReplicationController:
             Returns:
                 bool -- true if we should replicate the data from this node
         """
+        if node_addr not in self.config_controller.ledger:
+            return False
+
         # check if he wants new replications
         if self.config_controller.ledger[node_addr].replication_count <= len(
                 self.config_controller.ledger[node_addr].replications):

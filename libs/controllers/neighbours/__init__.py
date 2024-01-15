@@ -85,8 +85,8 @@ class NeighboursController():
             return
 
         node = NodeConfigData.deserialize(frame.data)
-        self.connections[frame.last_hop] = node
+        self.connections[frame.source_address] = node
 
         # set the config in the ledger
-        self.config_controller.ledger.ledger[frame.last_hop] = node
+        self.config_controller.ledger.ledger[frame.source_address] = node
         print("A node has send a heartbeat, current table: ", self.connections)

@@ -74,6 +74,8 @@ class Node():
         self.network_controller.register_callback(-1,
                                                   self.neighbours_controller.handle_alive)
 
+        self.network_controller.register_callback(Frame.FRAME_TYPES['node_joining'], lambda frame: self.network_controller.send_message(
+            Frame.FRAME_TYPES['config'], self.config_controller.config.serialize(), frame.source_address))
         print('node has been initialized, starting controllers')
 
         # make and send measuremnt every 1 second
@@ -87,8 +89,13 @@ class Node():
         print('Sended a broadcast of config')
 
     def store_measurement_frame(self, frame: Frame):
+        print('got a measurement frame')
+
         # check if node is in ledger
-        if frame.last_hop not in self.config_controller.ledger:
+        if frame.source_address not in self.config_controller.ledger:
+            self.network_controller.send_message(Frame.FRAME_TYPES['request_config'], b'',
+                              frame.source_address)  # ask for config
+            print('asking for config')
             return
 
         # check if we should store

@@ -13,6 +13,9 @@ class Ledger:
         return self.ledger[addr]
 
     def __getitem__(self, addr):
+        if addr not in self.ledger:
+            return None
+        
         return self.ledger[addr]
 
     def __setitem__(self, addr, config):
