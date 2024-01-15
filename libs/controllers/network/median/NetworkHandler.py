@@ -14,9 +14,9 @@ class NetworkHandler():
     e220: E220
     
 
-    def __init__(self,e220,max_tries=3) -> None:
+    def __init__(self,e220,network_controller: INetworkController, max_tries=3) -> None:
         self.e220 = e220
-        self.nc = INetworkController
+        self.nc = network_controller
         self.max_tries = max_tries
 
         self.rcv_ack = False
@@ -79,8 +79,11 @@ class NetworkHandler():
       
 
     def transmit_ack(self,message):
+        print('hello')
+
 
         if message.type == Frame.FRAME_TYPES['acknowledgement'] or message.destination_address == 255:
+            print('hello2')
             return
         
         # end-to-end acks. If the message was intended for this node then send ack back.
@@ -91,5 +94,6 @@ class NetworkHandler():
                         ).serialize()
             self.e220.send(message.source_address.to_bytes(2,'big'),ackmsg)
         
+        print(message.destination_address, self.nc.address, type(message.destination_address), type(self.nc.address))
         
          

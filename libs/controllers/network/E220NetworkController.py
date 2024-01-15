@@ -14,7 +14,7 @@ class E220NetworkController(INetworkController):
         
         self.e220 = e220
         
-        self.network_handler = NetworkHandler(e220=e220)
+        self.network_handler = NetworkHandler(e220, self)
         self.register_callback(Frame.FRAME_TYPES['acknowledgement'],self.network_handler.cb_incoming_ack)
         self.register_callback(-1,self.network_handler.transmit_ack)
 
@@ -45,20 +45,27 @@ class E220NetworkController(INetworkController):
             await asyncio.sleep(0.1)
     
 
-    def handle_packet(self,frame,sessions={}):
+    def handle_packet(self,frame: Frame,sessions={}):
         # More frames incoming and session ID is also set.
+        print('hi1', frame)
+
         # First session, add first packet as dict to sessions.
         if frame.frame_num and frame.ses_num != 0:
+            print('hi2')
             # Make session if it does not exists
             if not sessions.get(frame.ses_num):
+                print('hi2.1')
                 sessions[frame.ses_num] = frame.__dict__
             else:
+                print('hi2.2')
                 sessions[frame.ses_num]['data'] += frame.data
             self.network_handler.transmit_ack(frame)
 
 
+
         # If session exists and last packet we assemble everything and return it.
         elif frame.ses_num in sessions and frame.frame_num == 0:
+            print('hi3')
             packet = sessions[frame.ses_num]
             return Frame(
                 type=packet.type,
@@ -69,6 +76,7 @@ class E220NetworkController(INetworkController):
             )
         
         else:
+            print('hi4')
             return frame
         
     def send_message(self, type: int, message: bytes, addr=255,ttl=20,datasize=188):

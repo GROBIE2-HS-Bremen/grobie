@@ -22,7 +22,7 @@ uart = UART(1, baudrate=9600, rx=Pin(5), tx=Pin(4), timeout=10)
 # we will create the same network controller for all nodes as they need to connect to the same network
 m0 = Pin(26, Pin.OUT)
 m1 = Pin(15, Pin.OUT)
-nc = E220NetworkController(E220(uart=uart, m0=m0, m1=m1), set_config=False)
+nc = E220NetworkController(E220(uart=uart, m0=m0, m1=m1), set_config=True)
 
 # Config
 node_config = NodeConfigData(
@@ -51,7 +51,7 @@ async def testendpoint():
 
 
 
-loop.create_task(testendpoint())
+# loop.create_task(testendpoint())
 
 
 loop.run_forever()
