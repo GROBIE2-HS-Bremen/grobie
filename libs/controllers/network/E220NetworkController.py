@@ -47,25 +47,22 @@ class E220NetworkController(INetworkController):
 
     def handle_packet(self,frame: Frame,sessions={}):
         # More frames incoming and session ID is also set.
-        print('hi1', frame)
 
         # First session, add first packet as dict to sessions.
         if frame.frame_num and frame.ses_num != 0:
-            print('hi2')
             # Make session if it does not exists
             if not sessions.get(frame.ses_num):
-                print('hi2.1')
+                print('[+] Adding session')
                 sessions[frame.ses_num] = frame.__dict__
             else:
-                print('hi2.2')
+                print("[+] Appending data to session")
                 sessions[frame.ses_num]['data'] += frame.data
             self.network_handler.transmit_ack(frame)
 
 
-
         # If session exists and last packet we assemble everything and return it.
         elif frame.ses_num in sessions and frame.frame_num == 0:
-            print('hi3')
+            print('[+] Session exist lets assemble!')
             packet = sessions[frame.ses_num]
             return Frame(
                 type=packet.type,
@@ -76,7 +73,7 @@ class E220NetworkController(INetworkController):
             )
         
         else:
-            print('hi4')
+            print('[+] Single frame received')
             return frame
         
     def send_message(self, type: int, message: bytes, addr=255,ttl=20,datasize=188):

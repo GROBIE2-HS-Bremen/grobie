@@ -4,6 +4,7 @@ from libs.controllers.network.E220NetworkController import E220NetworkController
 from libs.sensors.SensorFactory import I2CSensorFactory
 from libs.E220 import E220
 from libs.Node import Node
+from libs.controllers.network import Frame
 
 from machine import I2C, Pin, UART
 
@@ -27,7 +28,7 @@ nc = E220NetworkController(E220(uart=uart, m0=m0, m1=m1), set_config=True)
 # Config
 node_config = NodeConfigData(
     addr=nc.address,
-    measurement_interval=5,
+    measurement_interval=100,
     replication_count=4
 )
 
@@ -43,15 +44,17 @@ node = Node(
 
 
 async def testendpoint():
-    await asyncio.sleep(1)
     # Test splitting and ack...
+    frame = Frame(type=Frame.FRAME_TYPES['acknowledgement'], message=b'', source_address=b'\x00\x04',
+                        destination_address=b'\x00\x06', ttl=20
+                        ).serialize()
     while True:
         node.network_controller.send_message(1,b'test',4)
+        nc.on_message(frame)
         await asyncio.sleep(3)
 
 
-
-# loop.create_task(testendpoint())
+#loop.create_task(testendpoint())
 
 
 loop.run_forever()

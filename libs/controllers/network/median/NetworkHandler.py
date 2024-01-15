@@ -79,15 +79,16 @@ class NetworkHandler():
       
 
     def transmit_ack(self,message):
-        print('hello')
+        print('[+] Transmit_ack()')
 
 
         if message.type == Frame.FRAME_TYPES['acknowledgement'] or message.destination_address == 255:
-            print('hello2')
+            print('[+] Received broadcast/ack')
             return
         
         # end-to-end acks. If the message was intended for this node then send ack back.
         elif message.destination_address == self.nc.address:
+
             print(f"Sending ACK to node {message.source_address} from node {self.nc.address}")
             ackmsg = Frame(type=Frame.FRAME_TYPES['acknowledgement'], message=b'', source_address=self.nc.address,
                         destination_address=message.source_address, ttl=20
