@@ -18,7 +18,7 @@ class Frame:
         'node_alive': 0x08,
     }
 
-    def __init__(self, type: int, message: bytes, source_address: int, destination_address: int, ttl=20,frame_num=1,ses_num=1):
+    def __init__(self, type: int, message: bytes, source_address: int, destination_address: int, ttl=20,frame_num=0,ses_num=0):
         self.type = type
         self.source_address = source_address
         self.destination_address = destination_address

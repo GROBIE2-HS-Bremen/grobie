@@ -47,7 +47,6 @@ class E220NetworkController(INetworkController):
 
     def handle_packet(self,frame,sessions={}):
         # More frames incoming and session ID is also set.
-
         # First session, add first packet as dict to sessions.
         if frame.frame_num and frame.ses_num != 0:
             # Make session if it does not exists
