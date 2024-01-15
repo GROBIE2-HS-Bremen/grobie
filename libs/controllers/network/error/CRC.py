@@ -9,9 +9,10 @@ CRC_LENGTH = 2
 class CRC:
     def __init__(self):
         self.corrector = RSCodec(5)
-        self.table = array.array("H", [self.table(i) for i in range(256)])
+        self.table = array.array("H", [CRC.table(i) for i in range(256)])
 
-    def table(self, c: int):
+    @staticmethod
+    def table(c: int):
         crc = c
         for j in range(8):
             if crc & 0x01:
