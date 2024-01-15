@@ -48,9 +48,20 @@ class Frame:
         type = frame[0]
         source_address = int.from_bytes(frame[1:3], 'big')
         destination_address = int.from_bytes(frame[3:5], 'big')
-        message = frame[5:]
+        ttl = int.from_bytes(frame[5:8],'big')
+        frame_num = int.from_bytes(frame[8:9],'big')
+        ses_num = int.from_bytes(frame[9:11],'big')
+        data = frame[11:]
 
-        return Frame(type, message, source_address, destination_address)
+        return Frame(
+            type, 
+            data, 
+            source_address, 
+            destination_address,
+            ttl,
+            frame_num,
+            ses_num,
+            )
 
 
     
