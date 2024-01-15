@@ -1,6 +1,7 @@
 import asyncio
 import _thread
 import time
+from libs.controllers.network.error.CRC import *
 
 
 class Frame:
@@ -25,21 +26,26 @@ class Frame:
         self.data = message
 
     def serialize(self) -> bytes:
-        return b''.join([
+        return CRC().encode(b''.join([
             self.type.to_bytes(1, 'big'),
             self.last_hop.to_bytes(2, 'big'),
             self.source_address.to_bytes(2, 'big'),
             self.destination_address.to_bytes(2, 'big'),
             self.data
-        ])
+        ]))
 
     @staticmethod
     def deserialize(frame: bytes):
-        type = frame[0]
-        last_hop = int.from_bytes(frame[1:3], 'big')
-        source_address = int.from_bytes(frame[3:5], 'big')
-        destination_address = int.from_bytes(frame[5:7], 'big')
-        message = frame[7:]
+        decode_frame = CRC().decode(frame)
+
+        if decode_frame is None:
+            return None
+
+        type = decode_frame[0]
+        last_hop = int.from_bytes(decode_frame[1:3], 'big')
+        source_address = int.from_bytes(decode_frame[3:5], 'big')
+        destination_address = int.from_bytes(decode_frame[5:7], 'big')
+        message = decode_frame[7:]
 
         return Frame(
             type=type, 
@@ -102,6 +108,8 @@ class INetworkController:
     def on_message(self, message: bytes):
         """ called when a message is recieved """
         frame = Frame.deserialize(message)
+        if frame is None:
+            return
 
         # call all the callbacks
         for callback in self.callbacks.get(-1, []):
