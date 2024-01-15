@@ -1,5 +1,5 @@
 from libs.sensors import ISensor
-from libs.sensors.BME280.BME280_base import BME280_base
+from .BME280_base import BME280_base
 
 from machine import I2C
 
