@@ -12,7 +12,7 @@
 * Make a simple test function to test (all) scenarios in reliable transport with ACK's and big messages.
 * Implementing full code for splitting messages + refine.
 
-Below simulation of node 3 sending to node 4 where big message got split up in multiple smaller messages using reliable transport.
+Below simulation of node 4 receiving data from node 3 where big message got split up in multiple smaller messages using reliable transport.
 
 <code>
 [+] Adding session
