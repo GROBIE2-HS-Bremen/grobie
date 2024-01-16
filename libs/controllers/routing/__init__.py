@@ -1,7 +1,7 @@
 from libs.controllers.config.NodeConfigData import NodeConfigData
 from libs.controllers.neighbours import NeighboursController
 from libs.controllers.network import Frame, INetworkController
-from libs.controllers.network import Frame
+
 
 #TODO ensure that the source and destination addresses are forwarded correctly. they should
 # be the same as the original frame, not the current node's address. Also, last_address should probably be handled differently.
