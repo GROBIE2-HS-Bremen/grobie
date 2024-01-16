@@ -29,7 +29,7 @@ class Node():
         self.measurement_controller = MeasurementController(
             sensors=self.sensors,
             actions=[
-                lambda m: print(type(m), str(m)),
+                #lambda m: print(type(m), str(m)),
                 lambda measurement: self.store_measurement(measurement),
                 lambda measurement: network_controller.send_message(
                     1, measurement.encode())
@@ -66,7 +66,7 @@ class Node():
         self.network_controller.register_callback(-1,
                                                   self.neighbours_controller.handle_alive)
 
-        print(self.network_controller.callbacks)
+        #print(self.network_controller.callbacks)
 
         print('node has been initialized, starting controllers')
 

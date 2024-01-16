@@ -122,23 +122,25 @@ class INetworkController:
         
         frame = Frame.deserialize(message)
         frame = self.handle_packet(frame)
-
-        print(frame)
+        
+        #print(frame)
         # No frame to give back to callbacks
         if frame is None: 
             return
         
+        
         for cb in self.callbacks.get(-1, []):
-            print(cb)
+            #print(cb)
             cb(frame)
         
         for cb in self.callbacks.get(frame.type, []):
-            print(cb)
+            #print(cb)
             cb(frame)
+        
 
         # print(callbacks)        
         # call all the callbacks
-        # for callback in callbacks:
+        #for callback in self.callbacks:
         #     callback(frame)
 
 

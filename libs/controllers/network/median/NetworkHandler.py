@@ -67,6 +67,8 @@ class NetworkHandler():
 
         if frame.destination_address == 255:
             return self.e220.send(addr,message)
+
+
         
         self.e220.send(addr,message)
         received = self.wait_for_ack(message,addr)
@@ -79,7 +81,6 @@ class NetworkHandler():
       
 
     def transmit_ack(self,message):
-        print('[+] Transmit_ack()')
 
 
         if message.type == Frame.FRAME_TYPES['acknowledgement'] or message.destination_address == 255:
@@ -88,13 +89,16 @@ class NetworkHandler():
         
         # end-to-end acks. If the message was intended for this node then send ack back.
         elif message.destination_address == self.nc.address:
-
+            
             print(f"Sending ACK to node {message.source_address} from node {self.nc.address}")
+            
             ackmsg = Frame(type=Frame.FRAME_TYPES['acknowledgement'], message=b'', source_address=self.nc.address,
                         destination_address=message.source_address, ttl=20
                         ).serialize()
+            
             self.e220.send(message.source_address.to_bytes(2,'big'),ackmsg)
-        
-        print(message.destination_address, self.nc.address, type(message.destination_address), type(self.nc.address))
+            
+            print(f"[+] Done sending ACK node {self.nc.address}->{message.source_address}")
+        #print(message.destination_address, self.nc.address, type(message.destination_address), type(self.nc.address))
         
          

@@ -13,6 +13,7 @@ class E220NetworkController(INetworkController):
         super().__init__()
         
         self.e220 = e220
+        self.sessions = {}
         
         self.network_handler = NetworkHandler(e220, self)
         self.register_callback(Frame.FRAME_TYPES['acknowledgement'],self.network_handler.cb_incoming_ack)
@@ -45,33 +46,53 @@ class E220NetworkController(INetworkController):
             await asyncio.sleep(0.1)
     
 
-    def handle_packet(self,frame: Frame,sessions={}):
+    def handle_packet(self,frame: Frame):
         # More frames incoming and session ID is also set.
-
+        sessions = self.sessions
+        
         # First session, add first packet as dict to sessions.
-        if frame.frame_num and frame.ses_num != 0:
+        if frame.frame_num != 1 and frame.ses_num != 1:
+
             # Make session if it does not exists
             if not sessions.get(frame.ses_num):
                 print('[+] Adding session')
-                sessions[frame.ses_num] = frame.__dict__
+
+                sessions[frame.ses_num] = {
+                    'destination_address':frame.destination_address,
+                    'ttl':frame.ttl,
+                    'source_address':frame.source_address,
+                    'ses_num':frame.ses_num,
+                    'frame_num':frame.frame_num,
+                    'type':frame.type,
+                    'data':frame.data
+                }
+                print(sessions)
+
             else:
                 print("[+] Appending data to session")
                 sessions[frame.ses_num]['data'] += frame.data
+                print(sessions)
+    
             self.network_handler.transmit_ack(frame)
-
+         
 
         # If session exists and last packet we assemble everything and return it.
-        elif frame.ses_num in sessions and frame.frame_num == 0:
-            print('[+] Session exist lets assemble!')
+        elif frame.ses_num in sessions and frame.frame_num == 1:
+
+            sessions[frame.ses_num]['data'] += frame.data
+            self.network_handler.transmit_ack(frame)
+
             packet = sessions[frame.ses_num]
+            print('[+] Complete packet is:')
+            print(packet)
             return Frame(
-                type=packet.type,
-                message=packet.data,
-                source_address=packet.source_address,
-                destination_address=packet.destination_address,
-                ttl=packet.ttl
+                type=packet['type'],
+                source_address=packet['source_address'],
+                destination_address=packet['destination_address'],
+                ttl=packet['ttl'],
+                message=packet['data'],
             )
-        
+            # TODO Delete session here
         else:
             print('[+] Single frame received')
             return frame
@@ -87,7 +108,8 @@ class E220NetworkController(INetworkController):
         
         if length_msg > datasize:
             # Random sessionnumber
-            ses_num = random.randint(1,255)
+            # 2 bytes
+            ses_num = random.randint(1,60000)
             
             # Amount of frames to send
             frame_num = length_msg // datasize + 1

@@ -42,19 +42,34 @@ node = Node(
     node_config=node_config,
 )
 
+async def msgs_ack():
+    """
+    Test the splitting of messages. 
+    This message will get split in 5 packets so we need to wait on 5 ACK's. 
+    """
+    data = b'1TEST'+200*b'TEST'+b'TEST2'
+    
+    # We need to get 5 ACKS because sending 5 messages
+    node.network_controller.send_message(1,data,4)
+    
 
-async def testendpoint():
-    # Test splitting and ack...
-    frame = Frame(type=Frame.FRAME_TYPES['acknowledgement'], message=b'', source_address=b'\x00\x04',
-                        destination_address=b'\x00\x06', ttl=20
+async def assemble_msgs():
+    """
+    This function mimics the receiving of 3 frames with separate data. And sends ACK's for each message. 
+    The goal is to keep track of the session and assemble the data correctly.
+    """
+
+    amount_frames = 3
+    
+    frames = [b'1-TEST-',b'2-TEST-',b'3-TEST']
+    for i in frames:
+        frame = Frame(type=Frame.FRAME_TYPES['measurment'], message=i, source_address=3,
+                        destination_address=4, ttl=20,frame_num=amount_frames,ses_num=6553
                         ).serialize()
-    while True:
-        node.network_controller.send_message(1,b'test',4)
+        amount_frames -= 1
         nc.on_message(frame)
-        await asyncio.sleep(3)
 
-
-#loop.create_task(testendpoint())
+loop.create_task(assemble_msgs())
 
 
 loop.run_forever()
