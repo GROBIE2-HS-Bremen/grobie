@@ -6,13 +6,14 @@ from libs.controllers.network.error.CRC import *
 
 class Frame:
     FRAME_TYPES = {
-        'discovery': 0x00,
-        'measurment': 0x01,
-        'config': 0x02,
-        'replication': 0x03,
+        'discovery':    0x00,
+        'measurment':   0x01,
+        'config':       0x02,
+        'replication':  0x03,
         'node_joining': 0x06,
         'node_leaving': 0x07,
-        'node_alive': 0x08,
+        'node_alive':   0x08,
+        'sync_time':    0x0f,
     }
 
     def __init__(self, type: int, message: bytes, source_address: int, destination_address: int, ttl=20):
