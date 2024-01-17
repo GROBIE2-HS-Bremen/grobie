@@ -28,7 +28,7 @@ nc = E220NetworkController(E220(uart=uart, m0=m0, m1=m1), set_config=False)
 # Config
 node_config = NodeConfigData(
     addr=nc.address,
-    measurement_interval=100,
+    measurement_interval=2,
     replication_count=4
 )
 
@@ -125,6 +125,6 @@ async def a():
         measurement.serialize()
     )
 
-loop.create_task(a())
+# loop.create_task(a())
 
 loop.run_forever()

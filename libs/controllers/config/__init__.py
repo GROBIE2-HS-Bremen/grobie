@@ -61,7 +61,7 @@ class ConfigController:
         if new_config is None:
             # broadcast the config. 
             # we use the node_joining as we most likely are a new node 
-            self.send_message(Frame.FRAME_TYPES['node_joining'], self._config.serialize())
+            self.send_message(Frame.FRAME_TYPES['node_alive'], self._config.serialize())
 
         else:
             # broadcast only the difference config

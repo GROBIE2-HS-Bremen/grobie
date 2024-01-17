@@ -62,7 +62,7 @@ class Node():
         self.network_controller.register_callback(
             Frame.FRAME_TYPES['request_config'],
             lambda frame: self.network_controller.send_message(
-                Frame.FRAME_TYPES['node_joining'], 
+                Frame.FRAME_TYPES['node_alive'], 
                 self.config_controller.config.serialize(), 
                 frame.source_address,
             )
