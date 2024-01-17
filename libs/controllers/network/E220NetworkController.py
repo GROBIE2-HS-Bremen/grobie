@@ -49,6 +49,11 @@ class E220NetworkController(INetworkController):
 
     def handle_packet(self,frame: Frame):
         # More frames incoming and session ID is also set.
+        ackmsg = Frame(type=Frame.FRAME_TYPES['acknowledgement'], message=b'', source_address=self.nc.address,
+                        destination_address=frame.source_address, ttl=20
+                        ).serialize()
+            
+            
         sessions = self.sessions
         frame_order = self.frame_order
         
@@ -68,11 +73,13 @@ class E220NetworkController(INetworkController):
                     'type':frame.type,
                     'data':b''
                 }
+
             if frame.ses_num not in frame_order:
                 frame_order[frame.ses_num] = []
 
             frame_order[frame.ses_num].insert(frame.frame_num,frame.data)
-         
+            print(f"Transmiting ACK for session {frame.ses_num} and frame {frame.frame_num}")
+            self.e220.send(frame.source_address.to_bytes(2,'big'),ackmsg)
 
         # If session exists and CLOSING packet we assemble everything and return it.
         elif frame.ses_num in sessions and frame.frame_num == 0:
@@ -91,6 +98,7 @@ class E220NetworkController(INetworkController):
                 message=packet['data'],
             )
             # TODO Delete session here
+            
         else:
             print('[+] Single packet received')
             return frame
