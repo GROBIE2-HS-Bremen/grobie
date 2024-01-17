@@ -68,9 +68,8 @@ class E220NetworkController(INetworkController):
                     'type':frame.type,
                     'data':b''
                 }
-            if not frame_order[frame.ses_num]:
+            if frame.ses_num not in frame_order:
                 frame_order[frame.ses_num] = []
-                frame_order[frame.ses_num].insert(frame.frame_num,frame.data)
 
             frame_order[frame.ses_num].insert(frame.frame_num,frame.data)
          
@@ -78,11 +77,8 @@ class E220NetworkController(INetworkController):
         # If session exists and CLOSING packet we assemble everything and return it.
         elif frame.ses_num in sessions and frame.frame_num == 0:
             
-            self.frame_order[frame.ses_num].insert(frame.data)
             data = b''.join(frame_order[frame.ses_num])
             sessions[frame.ses_num]['data'] = data
-
-            self.network_handler.transmit_ack(frame)
 
             packet = sessions[frame.ses_num]
             print('[+] Complete packet is:')
