@@ -62,16 +62,19 @@ class RoutingController:
         hop_count += 1
         ttl -= 1
         data = request_id.to_bytes(2, 'big') + hop_count.to_bytes(1, 'big')
-        new_frame = Frame(Frame.FRAME_TYPES["route_request"], data, source, destination, last_hop, ttl)
-        next_hop = self.getRoute(destination)
+        
+
         if broadcast:
+            next_hop = 255
             self.network.send_message(
-                Frame.FRAME_TYPES['route_request'], new_frame.serialize()
-            )
+                Frame.FRAME_TYPES['route_request'], data, source, destination, next_hop, self.node_config.addr, ttl
+                )
         else:
+            next_hop = self.getRoute(destination)
             self.network.send_message(
-                Frame.FRAME_TYPES['route_request'], new_frame.serialize(), next_hop
-            )
+                Frame.FRAME_TYPES['route_request'], data, source, destination, next_hop, self.node_config.addr, ttl
+                )
+            
 
 
     def send_route_reply(self, request_id: int, hop_count: int, source: int, destination: int, last_hop: int, ttl: int):
@@ -80,7 +83,7 @@ class RoutingController:
         new_frame = Frame(Frame.FRAME_TYPES["route_reply"], data, source, destination, last_hop, ttl) #TODO check if this works with last_hop
         next_hop = self.getRoute(destination)
         self.network.send_message(
-            Frame.FRAME_TYPES['route_response'], new_frame.serialize(), next_hop #TODO check if this should be done this way
+            Frame.FRAME_TYPES['route_response'], data, source, destination, next_hop, last_hop, ttl
         )
 
     def extract_data(data: bytes) -> tuple:

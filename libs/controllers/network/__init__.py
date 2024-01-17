@@ -69,7 +69,7 @@ class INetworkController:
             else:
                 time.sleep(0.001)
                 
-    def _send_message(self, type: int, message: bytes, addr=255):
+    def _send_message(self, type: int, message: bytes, source: int, destination: int, addr=255, last_hop=0, ttl=20):
         """ send a message to the specified address """
         raise NotImplementedError()
 
@@ -81,7 +81,7 @@ class INetworkController:
         """ stop the network controller """
         self.task.cancel()
 
-    def send_message(self, type: int, message: bytes, addr=255, last_hop: int, source: int, ttl=20):
+    def send_message(self, type: int, message: bytes, source: int, destination: int, addr=255, last_hop=0, ttl=20):
         """ send a message to the specified address """
         self.q.append((type, message, addr))
 
