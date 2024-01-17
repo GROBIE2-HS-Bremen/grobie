@@ -53,7 +53,7 @@ class Node():
 
         # Register message callbacks
         self.network_controller.register_callback(-1, lambda frame: print(
-            f'received a message of type {frame.type} from node {frame.source_address} for node {frame.destination_address}'))  # -1 is a wildcard type
+            f'received a message of type {frame.type} from node {frame.source_address} for node {frame.destination_address}: {frame.data} (rssi: {frame.rssi})'))  # -1 is a wildcard type
 
         self.network_controller.register_callback(Frame.FRAME_TYPES['measurment'],
                                                   self.store_measurement_frame)  # decide if we want to store the measurement

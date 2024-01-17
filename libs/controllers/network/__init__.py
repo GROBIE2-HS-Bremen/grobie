@@ -1,7 +1,7 @@
 import asyncio
 import _thread
 import time
-from libs.controllers.network.error.CRC import *
+import config as cfg
 
 
 class Frame:
@@ -16,35 +16,36 @@ class Frame:
         'sync_time':    0x0f,
     }
 
-    def __init__(self, type: int, message: bytes, source_address: int, destination_address: int, ttl=20):
+    def __init__(self, type: int, message: bytes, source_address: int, destination_address: int, ttl=20, rssi=-1):
         self.type = type
         self.source_address = source_address
         self.destination_address = destination_address
         self.ttl = ttl
+        self.rssi = rssi
 
         self.data = message
 
     def serialize(self) -> bytes:
-        return CRC().encode(b''.join([
+        return b''.join([
             self.type.to_bytes(1, 'big'),
             self.source_address.to_bytes(2, 'big'),
             self.destination_address.to_bytes(2, 'big'),
             self.data
-        ]))
+        ])
 
     @staticmethod
     def deserialize(frame: bytes):
-        decode_frame = CRC().decode(frame)
+        type = frame[0]
+        source_address = int.from_bytes(frame[1:3], 'big')
+        destination_address = int.from_bytes(frame[3:5], 'big')
+        message = frame[5:]
+        rssi = -1
 
-        if decode_frame is None:
-            return None
+        if cfg.rssi_enabled:  # type: ignore
+            rssi = message[-1]
+            message = message[:-1]
 
-        type = decode_frame[0]
-        source_address = int.from_bytes(decode_frame[1:3], 'big')
-        destination_address = int.from_bytes(decode_frame[3:5], 'big')
-        message = decode_frame[5:]
-
-        return Frame(type, message, source_address, destination_address)
+        return Frame(type, message, source_address, destination_address, rssi=rssi)
 
 
 class INetworkController:
@@ -72,7 +73,7 @@ class INetworkController:
                 self._send_message(type, message, addr)
             else:
                 time.sleep(0.001)
-                
+
     def _send_message(self, type: int, message: bytes, addr=255):
         """ send a message to the specified address """
         raise NotImplementedError()
