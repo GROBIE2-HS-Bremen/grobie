@@ -26,15 +26,20 @@ class Frame:
         self.data = message
 
     def serialize(self) -> bytes:
-        return b''.join([
+        frame = b''.join([
             self.type.to_bytes(1, 'big'),
             self.source_address.to_bytes(2, 'big'),
             self.destination_address.to_bytes(2, 'big'),
             self.data
         ])
 
+        return CRC().encode(frame)
+
     @staticmethod
     def deserialize(frame: bytes):
+        print('received frame: ', frame)
+
+        decode_frame = CRC().decode(frame)
         type = frame[0]
         source_address = int.from_bytes(frame[1:3], 'big')
         destination_address = int.from_bytes(frame[3:5], 'big')

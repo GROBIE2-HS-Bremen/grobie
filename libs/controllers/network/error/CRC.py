@@ -1,4 +1,5 @@
 import array
+
 from libs.external.reedsolo import *
 
 
@@ -26,16 +27,22 @@ class CRC:
         return crc.to_bytes(2, 'big')
 
     def verify(self, data: bytes, checksum: bytes) -> bool:
+        print('verify checksum only: ', self.checksum(data))
+
         return self.checksum(data) == checksum
 
     def encode(self, data: bytes) -> bytearray:
         combine = data + self.checksum(data)
+
+        print('encode data with checksum: ', combine)
 
         return self.corrector.encode(combine)
 
     def decode(self, frame: bytes) -> bytearray | None:
         try:
             decoded = self.corrector.decode(frame)[0]
+
+            print('decode data with checksum: ', decoded)
 
             crc = decoded[-2:]
             data = decoded[:-2]
@@ -48,9 +55,10 @@ class CRC:
         except reedsolo.ReedSolomonError:
             return None
 
+
 # Testing
 # crc = CRC()
-#
+
 # # Encode data
 # original_data = b"hello world"
 # encoded_data = crc.encode(original_data)
@@ -63,8 +71,8 @@ class CRC:
 # encoded_data[5] ^= 0xFF  # introduce an error
 #
 # print("corrupt data:", encoded_data)
-#
-# # Decode data
+
+# Decode data
 # decoded_data = crc.decode(encoded_data)
 #
 # if decoded_data is not None:
