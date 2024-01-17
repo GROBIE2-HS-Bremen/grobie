@@ -3,19 +3,20 @@ import _thread
 import time
 import config as cfg
 
+from libs.controllers.network.frame import FrameStructure
 from libs.controllers.network.error.CRC import CRC
 
 
 class Frame:
     FRAME_TYPES = {
-        'discovery':    0x00,
-        'measurment':   0x01,
-        'config':       0x02,
-        'replication':  0x03,
+        'discovery': 0x00,
+        'measurment': 0x01,
+        'config': 0x02,
+        'replication': 0x03,
         'node_joining': 0x06,
         'node_leaving': 0x07,
-        'node_alive':   0x08,
-        'sync_time':    0x0f,
+        'node_alive': 0x08,
+        'sync_time': 0x0f,
     }
 
     def __init__(self, type: int, message: bytes, source_address: int, destination_address: int, ttl=20, rssi=-1):
@@ -29,9 +30,12 @@ class Frame:
 
     def serialize(self) -> bytes:
         frame = b''.join([
-            self.type.to_bytes(1, 'big'),
-            self.source_address.to_bytes(2, 'big'),
-            self.destination_address.to_bytes(2, 'big'),
+            self.type.to_bytes(FrameStructure.type_length, 'big'),
+            self.source_address.to_bytes(FrameStructure.source_address_length, 'big'),
+            self.destination_address.to_bytes(FrameStructure.destination_address_length, 'big'),
+            self.ttl.to_bytes(FrameStructure.ttl_length, 'big'),
+            # self.frame_num.to_bytes(FrameStructure.frame_num_length, 'big'),
+            # self.ses_num.to_bytes(FrameStructure.ses_num_length, 'big'),
             self.data
         ])
 
@@ -46,17 +50,29 @@ class Frame:
         if decode_frame is None:
             return None
 
-        type = frame[0]
-        source_address = int.from_bytes(frame[1:3], 'big')
-        destination_address = int.from_bytes(frame[3:5], 'big')
-        message = frame[5:]
+        type = decode_frame[FrameStructure.type_index]
+        source_address = decode_frame[FrameStructure.source_address_start_index:FrameStructure.source_address_end_index]
+        destination_address = decode_frame[FrameStructure.destination_address_start_index:FrameStructure.destination_address_end_index]
+        ttl = decode_frame[FrameStructure.ttl_start_index:FrameStructure.ttl_end_index]
+        frame_num = decode_frame[FrameStructure.frame_num_start_index:FrameStructure.frame_num_end_index]
+        ses_num = decode_frame[FrameStructure.ses_num_start_index:FrameStructure.ses_num_end_index]
+        message = decode_frame[FrameStructure.data_start_index:]
         rssi = -1
 
         if cfg.rssi_enabled:  # type: ignore
             rssi = message[-1]
             message = message[:-1]
 
-        return Frame(type, message, source_address, destination_address, rssi)
+        return Frame(
+            type,
+            message,
+            int.from_bytes(source_address, 'big'),
+            int.from_bytes(destination_address, 'big'),
+            int.from_bytes(ttl),
+            int.from_bytes(frame_num),
+            int.from_bytes(ses_num),
+            rssi
+        )
 
 
 class INetworkController:
@@ -109,17 +125,15 @@ class INetworkController:
         self.callbacks[addr].append(callback)
 
     def on_message(self, message: bytes):
-        """ called when a message is recieved """
+        """ called when a message is received """
         frame = Frame.deserialize(message)
 
-        # get all the callback functions
         # get the callbacks for the wildcard
-        callbacks = self.callbacks.get(-1, [])
-        # get the callbacks for the specific type
-        callbacks += self.callbacks.get(frame.type, [])
+        for callback in self.callbacks.get(-1, []):
+            callback(frame)
 
-        # call all the callbacks
-        for callback in callbacks:
+        # get the callbacks for the specific type
+        for callback in self.callbacks.get(frame.type, []):
             callback(frame)
 
     @property

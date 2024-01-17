@@ -1,11 +1,12 @@
 import array
 
 from libs.external.reedsolo import *
+from libs.controllers.network.frame import FrameStructure
 
 
 class CRC:
     def __init__(self):
-        self.corrector = RSCodec(5)
+        self.corrector = RSCodec(FrameStructure.correction_length)
         self.table = array.array("H", [CRC.table(i) for i in range(256)])
 
     @staticmethod
@@ -24,7 +25,7 @@ class CRC:
         for c in data:
             crc = (crc >> 8) ^ self.table[(crc ^ c) & 0xFF]
 
-        return crc.to_bytes(2, 'big')
+        return crc.to_bytes(FrameStructure.checksum_length, 'big')
 
     def verify(self, data: bytes, checksum: bytes) -> bool:
         print('verify checksum only: ', self.checksum(data))
@@ -42,10 +43,8 @@ class CRC:
         try:
             decoded = self.corrector.decode(frame)[0]
 
-            print('decode data with checksum: ', decoded)
-
-            crc = decoded[-2:]
-            data = decoded[:-2]
+            crc = decoded[-FrameStructure.checksum_length:]
+            data = decoded[:-FrameStructure.checksum_length]
 
             if self.verify(data, crc):
                 return data
