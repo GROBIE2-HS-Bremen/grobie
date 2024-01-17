@@ -39,7 +39,7 @@ class E220NetworkController(INetworkController):
                 self.on_message(d)
             await asyncio.sleep(0.1)
 
-    def _send_message(self, type: int, message: bytes, addr=255):
+    def _send_message(self, type: int, message: bytes, addr: int, last_hop: int, source: int, ttl: int):
         # Get the address of the next hop
         if addr != 255:
             addr = self.routing.getRoute(addr)
@@ -49,7 +49,7 @@ class E220NetworkController(INetworkController):
             #TODO add to queue
             
             return
-
+        frame = Frame(type, message, source, addr, last_hop, ttl)
         frame = Frame(type, message, self.address, addr)
         print(f'sending frame {frame.__dict__}')
         self.e220.send((0xff00 + addr).to_bytes(2, 'big'), frame.serialize())

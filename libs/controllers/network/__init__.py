@@ -16,11 +16,12 @@ class Frame:
         'node_alive': 0x08,
     }
 
-    def __init__(self, type: int, message: bytes, source_address: int, destination_address: int, ttl=20):
+    def __init__(self, type: int, message: bytes, source_address: int, destination_address: int, last_hop: int, ttl=20):
         self.type = type
         self.source_address = source_address
         self.destination_address = destination_address
         self.ttl = ttl
+        self.last_hop = last_hop
 
         self.data = message
 
@@ -80,7 +81,7 @@ class INetworkController:
         """ stop the network controller """
         self.task.cancel()
 
-    def send_message(self, type: int, message: bytes, addr=255):
+    def send_message(self, type: int, message: bytes, addr=255, last_hop: int, source: int, ttl=20):
         """ send a message to the specified address """
         self.q.append((type, message, addr))
 
