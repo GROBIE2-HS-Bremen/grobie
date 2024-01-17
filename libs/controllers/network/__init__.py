@@ -3,6 +3,8 @@ import _thread
 import time
 import config as cfg
 
+from libs.controllers.network.error.CRC import CRC
+
 
 class Frame:
     FRAME_TYPES = {
@@ -26,26 +28,34 @@ class Frame:
         self.data = message
 
     def serialize(self) -> bytes:
-        return b''.join([
+        frame = b''.join([
             self.type.to_bytes(1, 'big'),
             self.source_address.to_bytes(2, 'big'),
             self.destination_address.to_bytes(2, 'big'),
             self.data
         ])
 
+        return CRC().encode(frame)
+
     @staticmethod
     def deserialize(frame: bytes):
-        type = frame[0]
-        source_address = int.from_bytes(frame[1:3], 'big')
-        destination_address = int.from_bytes(frame[3:5], 'big')
-        message = frame[5:]
-        rssi = -1
+        if cfg.rssi_enabled:
+            rssi = frame[-1]
+            frame = frame[:-1]
+        else:
+            rssi = -1
 
-        if cfg.rssi_enabled:  # type: ignore
-            rssi = message[-1]
-            message = message[:-1]
+        decode_frame = CRC().decode(frame)
 
-        return Frame(type, message, source_address, destination_address, rssi=rssi)
+        if decode_frame in None:
+            return None
+
+        type = decode_frame[0]
+        source_address = int.from_bytes(decode_frame[1:3], 'big')
+        destination_address = int.from_bytes(decode_frame[3:5], 'big')
+        message = decode_frame[5:]
+
+        return Frame(type, message, source_address, destination_address, rssi)
 
 
 class INetworkController:
