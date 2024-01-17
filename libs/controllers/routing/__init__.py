@@ -36,11 +36,7 @@ class RoutingController:
             print("address not found in routing table")
             request_id = self.node_config.addr + address    #TODO generate a random request id
             hop_count = 0
-            data = request_id.to_bytes(2, 'big') + hop_count.to_bytes(1, 'big')
-
-            frame = Frame(Frame.FRAME_TYPES['route_request'], data, self.node_config.addr, address)
-            self._forward_to_all_neighbours(frame)
-            self.send_route_request(request_id, hop_count,))
+            self.send_route_request(request_id, hop_count, self.node_config.addr, address, self.node_config.addr, 10, True)
             self.routes[address] = (-1, -1)
             return -1
         
