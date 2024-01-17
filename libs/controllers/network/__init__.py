@@ -53,13 +53,13 @@ class Frame:
         data = frame[11:]
 
         return Frame(
-            type, 
-            data, 
+            type,  
             source_address, 
             destination_address,
             ttl,
             frame_num,
             ses_num,
+            data
             )
 
 

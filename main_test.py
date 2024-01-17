@@ -26,6 +26,7 @@ m1 = Pin(15, Pin.OUT)
 nc = E220NetworkController(E220(uart=uart, m0=m0, m1=m1), set_config=True)
 
 # Config
+print(nc.address)
 node_config = NodeConfigData(
     addr=nc.address,
     measurement_interval=100,
@@ -44,13 +45,15 @@ node = Node(
 
 async def msgs_ack():
     """
-    Test the splitting of messages. 
+    Test the splitting of messages. And ACK'S.
     This message will get split in 5 packets so we need to wait on 5 ACK's. 
     """
     data = b'1TEST'+200*b'TEST'+b'TEST2'
     
     # We need to get 5 ACKS because sending 5 messages
-    node.network_controller.send_message(1,data,4)
+    while True:
+        node.network_controller.send_message(1,data,3)
+        asyncio.sleep(5)
     
 
 async def assemble_msgs():
@@ -69,7 +72,8 @@ async def assemble_msgs():
         amount_frames -= 1
         nc.on_message(frame)
 
-loop.create_task(assemble_msgs())
+
+loop.create_task(msgs_ack())
 
 
 loop.run_forever()
