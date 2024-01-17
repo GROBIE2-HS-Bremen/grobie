@@ -43,7 +43,11 @@ class Frame:
 
     @staticmethod
     def deserialize(frame: bytes):
-        print('received frame: ', frame)
+        if cfg.rssi_enabled:
+            rssi = frame[-1]
+            frame = frame[:-1]
+        else:
+            rssi = -1
 
         decode_frame = CRC().decode(frame)
 
@@ -57,11 +61,6 @@ class Frame:
         frame_num = decode_frame[FrameStructure.frame_num_start_index:FrameStructure.frame_num_end_index]
         ses_num = decode_frame[FrameStructure.ses_num_start_index:FrameStructure.ses_num_end_index]
         message = decode_frame[FrameStructure.data_start_index:]
-        rssi = -1
-
-        if cfg.rssi_enabled:  # type: ignore
-            rssi = message[-1]
-            message = message[:-1]
 
         return Frame(
             type,
