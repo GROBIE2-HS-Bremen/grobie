@@ -83,7 +83,7 @@ class INetworkController:
 
     def send_message(self, type: int, message: bytes, source: int, destination: int, addr=255, last_hop=0, ttl=20):
         """ send a message to the specified address """
-        self.q.append((type, message, addr))
+        self.q.append((type, message, source, destination, addr, last_hop, ttl))
 
     def register_callback(self, addr: int, callback):
         """ register a callback for the specified address """
