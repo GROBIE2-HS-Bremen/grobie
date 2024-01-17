@@ -55,7 +55,7 @@ class Frame:
         destination_address = int.from_bytes(decode_frame[3:5], 'big')
         message = decode_frame[5:]
 
-        return Frame(type, message, source_address, destination_address, rssi)
+        return Frame(type, message, source_address, destination_address, rssi=rssi)
 
 
 class INetworkController:
