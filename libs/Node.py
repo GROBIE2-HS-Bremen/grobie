@@ -5,6 +5,7 @@ from libs.controllers.measurement.Measurement import Measurement
 from libs.controllers.network import INetworkController
 from libs.controllers.network.E220NetworkController import Frame
 from libs.controllers.replication import ReplicationController
+from libs.controllers.timekeeping.RTCTimekeepingController import RTCTimekeepingController
 from libs.sensors import ISensor
 from libs.controllers.storage import IStorageController
 from libs.controllers.neighbours import NeighboursController
@@ -21,11 +22,14 @@ class Node():
         self.sensors = sensors
         self.storage_controller = storage_controller
         self.network_controller = network_controller
-        
+
+        self.timekeeping_controller = RTCTimekeepingController()
+
         self.init_storage()
 
         self.measurement_controller = MeasurementController(
             sensors=self.sensors,
+            timekeeping_controller=self.timekeeping_controller,
             actions=[
                 lambda m: print(type(m), str(m)),
                 lambda measurement: self.store_measurement(measurement),
@@ -74,6 +78,9 @@ class Node():
                                                   self.neighbours_controller.handle_leave)
         self.network_controller.register_callback(-1,
                                                   self.neighbours_controller.handle_alive)
+        
+        self.network_controller.register_callback(Frame.FRAME_TYPES['sync_time'],
+                                                    lambda frame: self.timekeeping_controller.sync_time(int.from_bytes(frame.data, 'big')))
 
         print(self.network_controller.callbacks)
 

@@ -1,5 +1,5 @@
 from libs.sensors import ISensor
-from libs.sensors.BH1750.BH1750_base import BH1750_base
+from .BH1750_base import BH1750_base
 
 from machine import I2C
 
