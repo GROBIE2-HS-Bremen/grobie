@@ -3,6 +3,8 @@ import _thread
 import time
 import config as cfg
 
+from libs.controllers.network.error.CRC import CRC
+
 
 class Frame:
     FRAME_TYPES = {
@@ -40,6 +42,10 @@ class Frame:
         print('received frame: ', frame)
 
         decode_frame = CRC().decode(frame)
+
+        if decode_frame is None:
+            return None
+
         type = frame[0]
         source_address = int.from_bytes(frame[1:3], 'big')
         destination_address = int.from_bytes(frame[3:5], 'big')
@@ -50,7 +56,7 @@ class Frame:
             rssi = message[-1]
             message = message[:-1]
 
-        return Frame(type, message, source_address, destination_address, rssi=rssi)
+        return Frame(type, message, source_address, destination_address, rssi)
 
 
 class INetworkController:
