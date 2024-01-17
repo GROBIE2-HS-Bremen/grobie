@@ -46,6 +46,8 @@ class E220NetworkController(INetworkController):
 
         # Node out of reach of network
         if addr == -1:
+            #TODO add to queue
+            
             return
 
         frame = Frame(type, message, self.address, addr)

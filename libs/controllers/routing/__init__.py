@@ -58,8 +58,9 @@ class RoutingController:
             if self.routes[destination][1] > hops:
                 self.routes[destination] = (next_hop, hops)
         
-    def send_route_request(self, request_id: int, hop_count: int, source: int, destination: int, last_hop: int, ttl: int, broadcast: bool = True):
+    def send_route_request(self, request_id: int, hop_count: int, source: int, destination: int, last_hop: int, ttl: int, broadcast: bool):
         hop_count += 1
+        ttl -= 1
         data = request_id.to_bytes(2, 'big') + hop_count.to_bytes(1, 'big')
         new_frame = Frame(Frame.FRAME_TYPES["route_request"], data, source, destination, last_hop, ttl)
         next_hop = self.getRoute(destination)
