@@ -28,22 +28,16 @@ class CRC:
     def verify(self, data: bytes, checksum: bytes) -> bool:
         current_checksum = checksum(data)
 
-        print('Verify checksum only: ', current_checksum)
-
         return current_checksum == checksum
 
     def encode(self, data: bytes) -> bytearray:
         combine = data + self.checksum(data)
-
-        print('Encode data with checksum: ', combine)
 
         return self.corrector.encode(combine)
 
     def decode(self, frame: bytes) -> bytearray | None:
         try:
             decoded = self.corrector.decode(frame)[0]
-
-            print('Decode data with checksum: ', decoded)
 
             crc = decoded[-2:]
             data = decoded[:-2]

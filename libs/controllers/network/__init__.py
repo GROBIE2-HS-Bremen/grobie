@@ -35,11 +35,7 @@ class Frame:
             self.data
         ])
 
-        encode_frame = CRC().encode(frame)
-
-        print('Sending frame: ', encode_frame)
-
-        return encode_frame
+        return CRC().encode(frame)
 
     @staticmethod
     def deserialize(frame: bytes):
@@ -49,11 +45,11 @@ class Frame:
         else:
             rssi = -1
 
-        print('Received frame: ', frame)
-
         decode_frame = CRC().decode(frame)
 
         if decode_frame is None:
+            print(f"Failed to decode frame [{frame}]")
+
             return None
 
         type = decode_frame[0]
