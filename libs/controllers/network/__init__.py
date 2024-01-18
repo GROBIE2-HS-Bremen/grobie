@@ -13,7 +13,9 @@ class Frame:
         'node_joining': 0x06,
         'node_leaving': 0x07,
         'node_alive':   0x08,
-        'sync_time':    0x0f,
+        'data_request': 0x0D,
+        'data':         0x0E,
+        'sync_time':    0x0F,
     }
 
     def __init__(self, type: int, message: bytes, source_address: int, destination_address: int, ttl=20, rssi=-1):

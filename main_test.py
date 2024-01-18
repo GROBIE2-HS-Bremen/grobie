@@ -43,21 +43,45 @@ node = Node(
 
 # async def a():
 #     from libs.controllers.network import Frame
+#     from libs.external.umsgpack import dumps as um
 
-#     orig_time = node.timekeeping_controller.get_time()
+#     # request data from node nc.addr
+#     await asyncio.sleep(1)
+#     print('requesting data')
 #     f = Frame(
-#         Frame.FRAME_TYPES['sync_time'],
-#         (orig_time - 10000000).to_bytes(4, 'big'),
-#         nc.address,
-#         1
+#         Frame.FRAME_TYPES['data_request'], 
+#         nc.address.to_bytes(2, 'big'), 
+#         22,
+#         nc.address
 #     )
-#     node.network_controller.on_message(f.serialize())
-
-#     new_time = node.timekeeping_controller.get_time()
-
-#     print(orig_time, new_time, orig_time - new_time)
+#     nc.on_message(f.serialize() + '\00') # add \00 for rssi
+#     print(len(f.serialize()))
 
 
+#     # send the node some data 
+#     await asyncio.sleep(1)
+#     data = um([
+#         {
+#             'node': 22,
+#             'temperature': 22,
+#             'humidity': 22,
+#             'timestamp': 22
+#         },
+#         {
+#             'node': 22,
+#             'temperature': 22,
+#             'humidity': 22,
+#             'timestamp': 23
+#         },
+#     ])
 
-# loop.create_task(a())
+#     f = Frame(
+#         Frame.FRAME_TYPES['data'], 
+#         data, 
+#         nc.address,
+#         22
+#     )
+#     nc.on_message(f.serialize() + '\00')
+
+loop.create_task(a())
 loop.run_forever()

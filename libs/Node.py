@@ -10,6 +10,8 @@ from libs.sensors import ISensor
 from libs.controllers.storage import IStorageController
 from libs.controllers.neighbours import NeighboursController
 
+import libs.external.umsgpack as umsgpack
+
 
 class Node():
 
@@ -73,6 +75,13 @@ class Node():
         self.network_controller.register_callback(Frame.FRAME_TYPES['sync_time'],
                                                     lambda frame: self.timekeeping_controller.sync_time(int.from_bytes(frame.data, 'big')))
 
+        # data request and response
+        self.network_controller.register_callback(Frame.FRAME_TYPES['data_request'],
+                                                    self.handle_data_request)
+        
+        self.network_controller.register_callback(Frame.FRAME_TYPES['data'],
+                                                    lambda frame: print(umsgpack.loads(frame.data)))
+
         print(self.network_controller.callbacks)
 
         print('node has been initialized, starting controllers')
@@ -89,6 +98,23 @@ class Node():
 
     def init_storage(self):
         self.storage_controller.mount('/sd')
+
+    def handle_data_request(self, frame: Frame):
+        # load all data from the database for the node stored in frame.data
+        # send it back to the node
+
+        node_id = int.from_bytes(frame.data, 'big')
+
+        data = self.database_controller.get_all()
+
+        # filter the data to only have the node we want
+        data = list(filter(lambda d: d[1]['address'] == node_id, data))
+
+        # send the data back
+        bin = umsgpack.dumps(data)
+        self.network_controller.send_message(
+            Frame.FRAME_TYPES['data'], bin, frame.source_address
+        )
 
     def store_measurement_frame(self, frame: Frame):
         # check if we should store
@@ -108,6 +134,9 @@ class Node():
 
     def store_measurement(self, measurement: Measurement, address=None):
         d = measurement.data
+
+        if address is None:
+            address = self.network_controller.address
         d['address'] = address  # type: ignore
 
         self.database_controller.store(measurement.timestamp, d)
