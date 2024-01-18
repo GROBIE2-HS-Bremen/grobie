@@ -1,6 +1,7 @@
 from libs.Node import Frame
 from libs.controllers.config.NodeConfigData import NodeConfigData
 from libs.controllers.network import Frame, INetworkController
+from libs.external.ChannelLogger import logger
 from utime import time
 import asyncio
 
@@ -58,7 +59,7 @@ class NeighboursController():
         self.last_update[node.addr] = time()
         self.network.send_message(
             Frame.FRAME_TYPES['node_alive'], self.node_config.serialize(), node.addr)
-        print("Connection created, current table: ", self.connections)
+        logger("Connection created, current table: ", self.connections, channel='routing')
 
     def handle_leave(self, frame: Frame):
         """
@@ -72,7 +73,7 @@ class NeighboursController():
         id = int.from_bytes(frame.data, 'big')
         self.connections.pop(id)
         self.last_update.pop(id)
-        print("Node leaving network created, current table: ", self.connections)
+        logger("Node leaving network created, current table: ", self.connections, channel='routing')
 
     def handle_alive(self, frame: Frame):
         """
@@ -86,4 +87,4 @@ class NeighboursController():
         node = NodeConfigData.deserialize(frame.data)
         self.connections[frame.source_address] = node
 
-        print("A node has send a heartbeat, current table: ", self.connections)
+        logger("A node has send a heartbeat, current table: ", self.connections, channel='routing')
