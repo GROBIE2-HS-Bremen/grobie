@@ -67,10 +67,10 @@ class Frame:
             message,
             int.from_bytes(source_address, 'big'),
             int.from_bytes(destination_address, 'big'),
-            int.from_bytes(ttl),
             int.from_bytes(frame_num),
             int.from_bytes(ses_num),
-            rssi
+            ttl=int.from_bytes(ttl),
+            rssi=rssi
         )
 
 
