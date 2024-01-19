@@ -3,8 +3,8 @@
 from machine import I2C
 import os 
 
+from libs.external.ChannelLogger import logger
 from libs.sensors import ISensor
-
 
 class I2CSensorFactory:
     """ # I2CSensorFactory
@@ -103,5 +103,5 @@ class I2CSensorFactory:
                 if issubclass(getattr(s, f), ISensor):
                     return getattr(s, f)(i2c)
 
-        print('No instance of ISensor found in the module')
+        logger('No instance of ISensor found in module ' + folders[0], channel='info')
         return None

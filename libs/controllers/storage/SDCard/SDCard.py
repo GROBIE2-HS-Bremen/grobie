@@ -23,6 +23,8 @@ Example usage on ESP8266:
 from micropython import const
 import time
 
+from libs.external.ChannelLogger import logger
+
 _CMD_TIMEOUT = const(100)
 
 _R1_IDLE_STATE = const(1 << 0)
@@ -81,7 +83,7 @@ class SDCard:
         else:
             raise OSError("no SD card")
 
-        print("[SDCard] Card detected")
+        logger("[SDCard] Card detected")
 
         # CMD8: determine card version
         r = self.cmd(8, 0x01AA, 0x87, 4)
@@ -93,7 +95,7 @@ class SDCard:
             raise OSError("couldn't determine SD card version")
 
         self.version = 2 if self.cdv else 1
-        print("[SDCard] Card version determined: {}".format("v2" if self.cdv else "v1"))
+        logger("[SDCard] Card version determined: {}".format("v2" if self.cdv else "v1"))
 
         # get the number of sectors
         # CMD9: response R2 (R1 byte + 16-byte block read)
@@ -110,8 +112,8 @@ class SDCard:
         else:
             raise OSError("SD card CSD format not supported")
 
-        print('[SDCard] sectors: ', self.sectors)
-        print('[SDCard] capacity: {} mb'.format(self.sectors / 2048))
+        logger('[SDCard] sectors: ', self.sectors)
+        logger('[SDCard] capacity: {} mb'.format(self.sectors / 2048))
 
         # CMD16: set block length to 512 bytes
         if self.cmd(16, 512, 0) != 0:
@@ -129,7 +131,6 @@ class SDCard:
             self.cmd(55, 0, 0)
             if self.cmd(41, 0, 0) == 0:
                 self.cdv = 512
-                # print("[SDCard] v1 card")
                 return
         raise OSError("timeout waiting for v1 card")
 
@@ -141,7 +142,6 @@ class SDCard:
             if self.cmd(41, 0x40000000, 0) == 0:
                 self.cmd(58, 0, 0, 4)
                 self.cdv = 1
-                # print("[SDCard] v2 card")
                 return
         raise OSError("timeout waiting for v2 card")
 
