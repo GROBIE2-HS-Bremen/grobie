@@ -5,10 +5,12 @@ from libs.controllers.measurement.Measurement import Measurement
 from libs.controllers.network import INetworkController
 from libs.controllers.network.E220NetworkController import Frame
 from libs.controllers.replication import ReplicationController
+from libs.controllers.timekeeping.RTCTimekeepingController import RTCTimekeepingController
 from libs.sensors import ISensor
 from libs.controllers.storage import IStorageController
 from libs.controllers.neighbours import NeighboursController
 
+from libs.external.ChannelLogger import logger
 
 class Node():
 
@@ -23,13 +25,16 @@ class Node():
         self.network_controller = network_controller
         self.neighbours_controller = NeighboursController(
             node_config, network_controller)
+        
+        self.timekeeping_controller = RTCTimekeepingController()
 
         self.init_storage()
 
         self.measurement_controller = MeasurementController(
             sensors=self.sensors,
+            timekeeping_controller=self.timekeeping_controller,
             actions=[
-                lambda m: print(type(m), str(m)),
+                lambda m: logger((type(m), str(m)), channel='measurement'),
                 lambda measurement: self.store_measurement(measurement),
                 lambda measurement: network_controller.send_message(
                     1, measurement.encode())
@@ -48,8 +53,11 @@ class Node():
             filepath, self.storage_controller)
 
         # Register message callbacks
-        self.network_controller.register_callback(-1, lambda frame: print(
-            f'received a message of type {frame.type} from node {frame.source_address} for node {frame.destination_address}'))  # -1 is a wildcard type
+        self.network_controller.register_callback(-1, lambda frame: logger(
+            f'received a message of type {frame.type} from node {frame.source_address} for node {frame.destination_address}: {frame.data} (rssi: {frame.rssi})', 
+            channel='recieved_message'
+            )
+        )  # -1 is a wildcard type
 
         self.network_controller.register_callback(Frame.FRAME_TYPES['measurment'],
                                                   self.store_measurement_frame)  # decide if we want to store the measurement
@@ -65,20 +73,23 @@ class Node():
                                                   self.neighbours_controller.handle_leave)
         self.network_controller.register_callback(-1,
                                                   self.neighbours_controller.handle_alive)
+        
+        self.network_controller.register_callback(Frame.FRAME_TYPES['sync_time'],
+                                                    lambda frame: self.timekeeping_controller.sync_time(int.from_bytes(frame.data, 'big')))
 
-        #print(self.network_controller.callbacks)
+        
 
-        print('node has been initialized, starting controllers')
+        logger('node has been initialized, starting controllers', channel='info')
 
         # make and send measuremnt every 1 second
         self.measurement_controller.start(
             node_config.measurement_interval * 1000)
         self.neighbours_controller.start()
         self.network_controller.start()
-        print('node has been initialized, controllers started')
+        logger('node has been initialized, controllers started', channel='info')
 
         self.neighbours_controller.broadcast_join()
-        print('Sended a broadcast of config')
+        logger('Sended a broadcast of config', channel='info')
 
     def init_storage(self):
         self.storage_controller.mount('/sd')

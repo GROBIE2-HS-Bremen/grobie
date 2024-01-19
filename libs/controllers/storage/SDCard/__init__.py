@@ -4,6 +4,8 @@ from libs.controllers.storage import IStorageController
 
 from uos import mount, umount, VfsFat, mkdir
 
+from libs.external.ChannelLogger import logger
+
 
 class SDCardStorageController(IStorageController):
     mounted = False
@@ -24,7 +26,7 @@ class SDCardStorageController(IStorageController):
             mount(vfs, mount_point)
         except OSError as e:
             if e.args[0] == 1:
-                print('mount failed')
+                logger('mount failed', channel='error')
 
     def umount(self):
         # FIXME: check if already unmounted

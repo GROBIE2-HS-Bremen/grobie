@@ -4,27 +4,31 @@ import _thread
 import time
 import math
 
+import config as cfg
 
 
 class Frame: 
     FRAME_TYPES = {
-        'discovery': 0x00,
-        'measurment': 0x01,
-        'config': 0x02,
-        'replication': 0x03,
+        'discovery':    0x00,
+        'measurment':   0x01,
+        'config':       0x02,
+        'replication':  0x03,
         'acknowledgement':0x04,
         'node_joining': 0x06,
         'node_leaving': 0x07,
-        'node_alive': 0x08,
+        'node_alive':   0x08,
+        'sync_time':    0x0f,
     }
 
-    def __init__(self, type: int, message: bytes, source_address: int, destination_address: int, ttl=20,frame_num=0,ses_num=0):
+    def __init__(self, type: int, message: bytes, source_address: int,destination_address: int, ttl=20, rssi=-1,frame_num=0,ses_num=0):
         self.type = type
         self.source_address = source_address
         self.destination_address = destination_address
         self.ttl = ttl
         self.frame_num = frame_num
-        self.ses_num = ses_num
+        self.ses_num = ses_num        
+        self.rssi = rssi
+
         self.data = message
   
 
@@ -51,6 +55,11 @@ class Frame:
         frame_num = int.from_bytes(frame[8:9],'big')
         ses_num = int.from_bytes(frame[9:11],'big')
         data = frame[11:]
+        rssi = -1
+
+        if cfg.rssi_enabled:  # type: ignore
+            rssi = message[-1]
+            message = message[:-1]
 
         return Frame(
             type,
@@ -59,7 +68,8 @@ class Frame:
             destination_address,
             ttl,
             frame_num,
-            ses_num
+            ses_num,
+            rssi=rssi
             )
 
 
@@ -89,7 +99,7 @@ class INetworkController:
                 self._send_message(type, message, addr)
             else:
                 time.sleep(0.001)
-                
+
     def _send_message(self, type: int, message: bytes, addr=255):
         """ send a message to the specified address """
         raise NotImplementedError()

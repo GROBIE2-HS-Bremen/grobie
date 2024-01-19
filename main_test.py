@@ -8,7 +8,10 @@ from libs.controllers.network import Frame
 
 from machine import I2C, Pin, UART
 
+from libs.external.ChannelLogger import logger
+
 import asyncio
+
 
 ##### CONNECT SENSORS #####
 i2c = I2C(1, scl=Pin(3), sda=Pin(2), freq=400000)
@@ -32,6 +35,15 @@ node_config = NodeConfigData(
     measurement_interval=100,
     replication_count=4
 )
+
+
+## SETUP LOGGER ##
+# register custom log levels
+logger.set_channel('recieved_message', True)
+logger.set_channel('send_message', True)
+logger.set_channel('measurement', True)
+logger.set_channel('routing', True)
+
 
 ##### START NODE #####
 # start event loop and run forever
@@ -92,4 +104,72 @@ async def assemble_msgs():
 loop.create_task(assemble_msgs())
 
 
+async def msgs_ack():
+    """
+    Test the splitting of messages. And ACK'S.
+    This message will get split in 5 packets so we need to wait on 5 ACK's. 
+    """
+    data = b'1TEST'+200*b'TEST'+b'TEST2'
+    
+    # We need to get 5 ACKS because sending 5 messages
+    while True:
+        node.network_controller.send_message(1,data,3)
+        asyncio.sleep(5)
+    
+
+
+async def assemble_msgs():
+    """
+    This function mimics the receiving of 3 frames with separate data. And sends ACK's for each message. 
+    The goal is to keep track of the session and assemble the data correctly.
+    """
+
+    amount_frames = 3
+    
+    
+    frames = [b'1-TEST-',b'2-TEST-',b'3-TEST']
+    for i in frames:
+        frame = Frame(type=Frame.FRAME_TYPES['measurment'], message=i, source_address=3,
+                        destination_address=4, ttl=20,frame_num=amount_frames,ses_num=6553
+                        ).serialize()
+        amount_frames -= 1
+
+    
+        node.network_controller.on_message(frame)
+
+
+    frame = Frame(type=Frame.FRAME_TYPES['measurment'], message=i, source_address=3,
+                        destination_address=4, ttl=20,frame_num=0,ses_num=6553
+                        ).serialize()
+    
+    node.network_controller.on_message(frame)
+    
+        
+        
+
+
+
+
+loop.create_task(assemble_msgs())
+
+
+# async def a():
+#     from libs.controllers.network import Frame
+
+#     orig_time = node.timekeeping_controller.get_time()
+#     f = Frame(
+#         Frame.FRAME_TYPES['sync_time'],
+#         (orig_time - 10000000).to_bytes(4, 'big'),
+#         nc.address,
+#         1
+#     )
+#     node.network_controller.on_message(f.serialize())
+
+#     new_time = node.timekeeping_controller.get_time()
+
+#     print(orig_time, new_time, orig_time - new_time)
+
+
+
+# loop.create_task(a())
 loop.run_forever()

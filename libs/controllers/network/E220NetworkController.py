@@ -2,7 +2,8 @@ import asyncio
 import random
 from libs.E220 import E220, MODE_CONFIG, MODE_NORMAL
 from libs.controllers.network import Frame, INetworkController
-from libs.controllers.network.median.NetworkHandler import NetworkHandler
+
+from libs.external.ChannelLogger import logger
 
 
 class E220NetworkController(INetworkController):
@@ -33,7 +34,7 @@ class E220NetworkController(INetworkController):
                     and not dir_val.startswith("__")
                 ]:
 
-                print(f'setting {cnf_key} to {getattr(cfg, cnf_key)}')
+                logger(f'setting {cnf_key} to {getattr(cfg, cnf_key)}')
                 setattr(self.e220, cnf_key, getattr(cfg, cnf_key))
 
         self.e220.save()
@@ -168,6 +169,11 @@ class E220NetworkController(INetworkController):
         self.network_handler.transmit_packet(frame)
         
         
+
+    def _send_message(self, type: int, message: bytes, addr=255):
+        frame = Frame(type, message, self.address, addr)
+        logger(f'sending frame {frame.__dict__}', channel='send_message')
+        self.e220.send((0xff00 + addr).to_bytes(2, 'big'), frame.serialize())
 
     @property
     def address(self) -> int:
