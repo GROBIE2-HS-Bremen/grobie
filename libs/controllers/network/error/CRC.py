@@ -26,9 +26,7 @@ class CRC:
         return crc.to_bytes(2, 'big')
 
     def verify(self, data: bytes, checksum: bytes) -> bool:
-        current_checksum = checksum(data)
-
-        return current_checksum == checksum
+        return checksum(data) == checksum
 
     def encode(self, data: bytes) -> bytearray:
         combine = data + self.checksum(data)
