@@ -45,16 +45,13 @@ class ReplicationController:
             Returns:
                 bool -- true if we should replicate the data from this node
         """
-        # check if we are replicating this node
-        if not self.are_replicating(node_addr):
-            return False
+        # check if it wants more replications
+        other_cnf = self.config_controller.ledger[node_addr]
+        if len(other_cnf.replications) < other_cnf.replication_count:
+            return True
+        
+        return False
 
-        # check if he wants new replications
-        if self.config_controller.ledger[node_addr].replication_count <= len(
-                self.config_controller.ledger[node_addr].replications):
-            return False
-
-        return True
 
     def handle_bid(self, frame: Frame):
         """ 
@@ -67,6 +64,7 @@ class ReplicationController:
             Arguments:
                 frame {Frame} -- the frame containing the bid
         """
+
         # check if it is for us 
         if frame.destination_address != self.config_controller.config.addr:
             return
@@ -96,7 +94,7 @@ class ReplicationController:
 
             after this it will update the configuration and broadcast it on the network. 
         """
-        await asyncio.sleep(self.config_controller.config.measurement_interval)
+        await asyncio.sleep(self.config_controller.config.bidding_wait)
         self.waiting_for_bids = False
 
         # decide all winners and update config

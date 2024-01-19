@@ -2,15 +2,19 @@ import libs.external.umsgpack as umsgpack
 
 class Measurement:
     data: dict[str, float | int]
-    timestamp: int
 
-    def __init__(self, timestamp, **kwargs) -> None:
+    def __init__(self, timestamp= None, **kwargs) -> None:
         self.data = kwargs
         self.timestamp = timestamp
 
     def encode(self):
         """ encode data to bytes """
-        return umsgpack.dumps(self.data)
+        dump = {
+            "timestamp": self.timestamp,
+        }
+        dump.update(self.data)
+
+        return umsgpack.dumps(dump)
 
     @staticmethod
     def decode(bits: bytes):

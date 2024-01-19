@@ -112,14 +112,11 @@ class INetworkController:
         """ called when a message is recieved """
         frame = Frame.deserialize(message)
 
-        # get all the callback functions
-        # get the callbacks for the wildcard
-        callbacks = self.callbacks.get(-1, [])
-        # get the callbacks for the specific type
-        callbacks += self.callbacks.get(frame.type, [])
-
         # call all the callbacks
-        for callback in callbacks:
+        for callback in self.callbacks.get(-1, []):
+            callback(frame)
+
+        for callback in self.callbacks.get(frame.type, []):
             callback(frame)
 
     @property

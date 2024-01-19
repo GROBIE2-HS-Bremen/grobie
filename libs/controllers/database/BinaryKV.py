@@ -31,7 +31,7 @@ class BinarKVDatabase(IDatabaseController):
 
         # ensure the file exists and open it
         self.storage_controller.ensure_exists(self.filename)
-        self.handle = open(filename, 'wb')
+        self.handle = open(filename, 'a+b')
 
     def store(self, timestamp, data):
         """ store the data in a binary format. the first 32 bits are the timestamp, the rest is the data"""
