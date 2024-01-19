@@ -175,10 +175,11 @@ class E220NetworkController(INetworkController):
         
         
 
-    def _send_message(self, type: int, message: bytes, addr=255):
+    def _send_message(self, type: int, message: bytes, addr):
         frame = Frame(type, message, self.address, addr)
+
         logger(f'sending frame {frame.__dict__}', channel='send_message')
-        self.e220.send((0xff00 + addr).to_bytes(2, 'big'), frame.serialize())
+        self.e220.send(addr.to_bytes(2, 'big'), frame.serialize())
 
     @property
     def address(self) -> int:

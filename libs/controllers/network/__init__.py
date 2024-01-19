@@ -20,7 +20,7 @@ class Frame:
         'sync_time':    0x0f,
     }
 
-    def __init__(self, type: int, message: bytes, source_address: int,destination_address: int, ttl=20,frame_num=0,ses_num=0,rssi=-1):
+    def __init__(self, type: int, message: bytes, source_address: int,destination_address: int, ttl=20,frame_num=0,ses_num=0,rssi=1):
         self.type = type
         self.source_address = source_address
         self.destination_address = destination_address
@@ -57,7 +57,7 @@ class Frame:
         rssi = -1
 
         if cfg.rssi_enabled:  # type: ignore
-            rssi = data[-1]
+            rssi = - (256 - data[-1])
             data = data[:-1]
         
 
@@ -100,7 +100,7 @@ class INetworkController:
             else:
                 time.sleep(0.001)
 
-    def _send_message(self, type: int, message: bytes, addr=255):
+    def _send_message(self, type: int, message: bytes, addr):
         """ send a message to the specified address """
         raise NotImplementedError()
 
@@ -111,8 +111,7 @@ class INetworkController:
         """ stop the network controller """
         self.task.cancel()
 
-
-    def send_message(self, type: int, message: bytes, addr=255):
+    def send_message(self, type: int, message: bytes, addr=0xffff):
         """ send a message to the specified address """
         self.q.append((type, message, addr))
 
