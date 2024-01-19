@@ -55,11 +55,11 @@ class INetworkController:
 
     task: asyncio.Task
     callbacks: dict[int, list]
-    q: list
+    queue: list
 
     def __init__(self):
         self.callbacks = {}
-        self.q = []
+        self.queue = []
 
     def start(self):
         """ start the network controller """
@@ -71,8 +71,8 @@ class INetworkController:
     killed = False
     def _thread(self):
         while True and not self.killed:
-            if len(self.q) > 0:
-                type, message, addr = self.q.pop()
+            if len(self.queue) > 0:
+                type, message, addr = self.queue.pop()
                 self._send_message(type, message, addr)
             else:
                 time.sleep(0.001)
@@ -93,7 +93,7 @@ class INetworkController:
 
     def send_message(self, type: int, message: bytes, addr=0xffff):
         """ send a message to the specified address """
-        self.q.append((type, message, addr))
+        self.queue.append((type, message, addr))
 
     def register_callback(self, addr: int, callback):
         """ register a callback for the specified address """
