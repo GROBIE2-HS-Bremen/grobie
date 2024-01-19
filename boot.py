@@ -111,26 +111,6 @@ async def assemble_msgs():
         
 
 
-#loop.create_task(msgs_ack())
 
 
-# async def a():
-#     from libs.controllers.network import Frame
-
-#     orig_time = node.timekeeping_controller.get_time()
-#     f = Frame(
-#         Frame.FRAME_TYPES['sync_time'],
-#         (orig_time - 10000000).to_bytes(4, 'big'),
-#         nc.address,
-#         1
-#     )
-#     node.network_controller.on_message(f.serialize())
-
-#     new_time = node.timekeeping_controller.get_time()
-
-#     print(orig_time, new_time, orig_time - new_time)
-
-
-
-# loop.create_task(a())
-loop.run_forever()
+loop.create_task(msgs_ack())
