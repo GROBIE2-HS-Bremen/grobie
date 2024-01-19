@@ -69,41 +69,6 @@ async def msgs_ack():
     
 
 
-async def assemble_msgs():
-    """
-    This function mimics the receiving of 3 frames with separate data. And sends ACK's for each message. 
-    The goal is to keep track of the session and assemble the data correctly.
-    """
-
-    amount_frames = 3
-    
-    
-    frames = [b'1-TEST-',b'2-TEST-',b'3-TEST']
-    for i in frames:
-        frame = Frame(type=Frame.FRAME_TYPES['measurment'], message=i, source_address=3,
-                        destination_address=4, ttl=20,frame_num=amount_frames,ses_num=6553
-                        ).serialize()
-        amount_frames -= 1
-
-    
-        node.network_controller.on_message(frame)
-
-
-    frame = Frame(type=Frame.FRAME_TYPES['measurment'], message=i, source_address=3,
-                        destination_address=4, ttl=20,frame_num=0,ses_num=6553
-                        ).serialize()
-    
-    node.network_controller.on_message(frame)
-    
-        
-        
-
-
-
-
-loop.create_task(assemble_msgs())
-
-
 async def msgs_ack():
     """
     Test the splitting of messages. And ACK'S.
@@ -131,16 +96,14 @@ async def assemble_msgs():
     for i in frames:
         frame = Frame(type=Frame.FRAME_TYPES['measurment'], message=i, source_address=3,
                         destination_address=4, ttl=20,frame_num=amount_frames,ses_num=6553
-                        ).serialize()
+                        ).serialize()+b'\x00'
         amount_frames -= 1
-
-    
         node.network_controller.on_message(frame)
 
 
     frame = Frame(type=Frame.FRAME_TYPES['measurment'], message=i, source_address=3,
-                        destination_address=4, ttl=20,frame_num=0,ses_num=6553
-                        ).serialize()
+                        destination_address=4, ttl=20,frame_num=0,ses_num=6553,rssi=3
+                        ).serialize()+b'\x00'
     
     node.network_controller.on_message(frame)
     

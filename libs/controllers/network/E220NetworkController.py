@@ -2,7 +2,7 @@ import asyncio
 import random
 from libs.E220 import E220, MODE_CONFIG, MODE_NORMAL
 from libs.controllers.network import Frame, INetworkController
-
+from libs.controllers.network.median.NetworkHandler import NetworkHandler
 from libs.external.ChannelLogger import logger
 
 
@@ -89,9 +89,9 @@ class E220NetworkController(INetworkController):
             if None in frame_order[frame.ses_num]:
                 return False
             
+            
             frame_order[frame.ses_num].reverse()
 
-            print(frame_order[frame.ses_num])
             
             data = b''.join(frame_order[frame.ses_num])
             sessions[frame.ses_num]['data'] = data
@@ -102,6 +102,10 @@ class E220NetworkController(INetworkController):
             packet = sessions[frame.ses_num]
             print('[+] Complete packet is:')
             print(packet)
+            
+            del sessions[frame.ses_num]
+            del frame_order[frame.ses_num]
+            
             return Frame(
                 type=packet['type'],
                 source_address=packet['source_address'],
@@ -109,7 +113,8 @@ class E220NetworkController(INetworkController):
                 ttl=packet['ttl'],
                 message=packet['data'],
             )
-            # TODO Delete session here
+            
+
         
         else:
             print('[+] Single packet received')

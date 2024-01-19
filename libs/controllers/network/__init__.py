@@ -20,7 +20,7 @@ class Frame:
         'sync_time':    0x0f,
     }
 
-    def __init__(self, type: int, message: bytes, source_address: int,destination_address: int, ttl=20, rssi=-1,frame_num=0,ses_num=0):
+    def __init__(self, type: int, message: bytes, source_address: int,destination_address: int, ttl=20,frame_num=0,ses_num=0,rssi=-1):
         self.type = type
         self.source_address = source_address
         self.destination_address = destination_address
@@ -28,7 +28,6 @@ class Frame:
         self.frame_num = frame_num
         self.ses_num = ses_num        
         self.rssi = rssi
-
         self.data = message
   
 
@@ -58,17 +57,18 @@ class Frame:
         rssi = -1
 
         if cfg.rssi_enabled:  # type: ignore
-            rssi = message[-1]
-            message = message[:-1]
+            rssi = data[-1]
+            data = data[:-1]
+        
 
         return Frame(
-            type,
-            data,
-            source_address,
-            destination_address,
-            ttl,
-            frame_num,
-            ses_num,
+            type=type,
+            message=data,
+            source_address=source_address,
+            destination_address=destination_address,
+            ttl=ttl,
+            frame_num=frame_num,
+            ses_num=ses_num,
             rssi=rssi
             )
 
