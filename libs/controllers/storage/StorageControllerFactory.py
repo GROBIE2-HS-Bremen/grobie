@@ -1,6 +1,6 @@
-from libs.controllers.storage import IStorageController
 from libs.controllers.storage.LocalStorage import LocalStorageController
 from libs.controllers.storage.SDCard import SDCardStorageController
+from libs.controllers.storage import IStorageController
 
 from machine import SPI
 

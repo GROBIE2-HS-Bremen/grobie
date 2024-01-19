@@ -1,10 +1,10 @@
-# from libs.sensors.23-BH1750 import BH1750
-# from libs.sensors.BME280 import BME280
-from machine import I2C
-import os 
-
 from libs.external.ChannelLogger import logger
 from libs.sensors import ISensor
+
+from machine import I2C
+
+import os 
+
 
 class I2CSensorFactory:
     """ # I2CSensorFactory

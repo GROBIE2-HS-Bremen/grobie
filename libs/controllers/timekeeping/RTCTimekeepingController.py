@@ -1,7 +1,8 @@
-from machine import RTC
-from time import mktime, localtime
-
 from libs.controllers.timekeeping import ITimekeepingController
+
+from time import mktime, localtime
+from machine import RTC
+
 
 class RTCTimekeepingController(ITimekeepingController):
 

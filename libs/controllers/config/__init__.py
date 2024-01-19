@@ -1,7 +1,7 @@
-from libs.controllers.config.Ledger import Ledger
 from libs.controllers.config.NodeConfigData import NodeConfigData
-from libs.controllers.network import Frame
 from libs.helpers.dict import deserialize_dict, serialize_dict
+from libs.controllers.config.Ledger import Ledger
+from libs.controllers.network import Frame
 
 
 class ConfigController:
@@ -25,20 +25,10 @@ class ConfigController:
         return self._ledger
 
     def handle_message(self, frame: Frame):
-
-        # check if it is a discovery message
-        if frame.type == Frame.FRAME_TYPES['discovery']:
-            # parse the message
-            config = NodeConfigData.deserialize(frame.data)
-            # update the ledger
-            self._ledger.ledger[config.addr] = config
-
-        # check if it is a config message. contain a diff
-        elif frame.type == Frame.FRAME_TYPES['config']:
-            # parse the message
-            config = deserialize_dict(frame.data)
-            # apply the diff to the config
-            self._ledger.apply_diff(config, frame.source_address)
+        # parse the message
+        config = deserialize_dict(frame.data)
+        # apply the diff to the config
+        self._ledger.apply_diff(config, frame.source_address)
 
     def update_config(self, key, value):
         # clone the config
@@ -65,8 +55,9 @@ class ConfigController:
     def broadcast_config(self, new_config=None):
         if new_config is None:
             # broadcast the config. 
-            # we use the discovery as we most likely are a new node 
-            self.send_message(Frame.FRAME_TYPES['discovery'], self._config.serialize())
+            # we use the node_alive type as it is used to keep the node in the network. 
+            # it takes the config as data 
+            self.send_message(Frame.FRAME_TYPES['node_alive'], self._config.serialize())
 
         else:
             # broadcast only the difference config

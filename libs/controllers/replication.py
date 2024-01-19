@@ -2,9 +2,9 @@ from libs.controllers.config import ConfigController
 from libs.controllers.network import Frame
 
 from random import randint
-import math
 
 import asyncio
+import math
 
 
 class ReplicationController:

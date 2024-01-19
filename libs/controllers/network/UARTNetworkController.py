@@ -1,6 +1,7 @@
-import asyncio
-from machine import UART
 from libs.controllers.network import INetworkController
+from machine import UART
+
+import asyncio
 
 
 class UARTNetworkController(INetworkController):
