@@ -1,9 +1,9 @@
 from libs.controllers.database import IDatabaseController
 from libs.controllers.storage import IStorageController
 from libs.controllers.storage.LocalStorage import LocalStorageController
+from libs.external.ChannelLogger import logger
 
 import libs.external.umsgpack as umsgpack
-
 
 class BinarKVDatabase(IDatabaseController):
     """ 
@@ -183,4 +183,4 @@ if __name__ == '__main__':
     assert db.get_all_before(0) == []
     assert db.get_all_before(10) == inserted_data
 
-    print('all tests passed')
+    logger('all tests passed')

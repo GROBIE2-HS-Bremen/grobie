@@ -7,7 +7,10 @@ from libs.Node import Node
 
 from machine import I2C, Pin, UART
 
+from libs.external.ChannelLogger import logger
+
 import asyncio
+
 
 ##### CONNECT SENSORS #####
 i2c = I2C(1, scl=Pin(3), sda=Pin(2), freq=400000)
@@ -30,6 +33,15 @@ node_config = NodeConfigData(
     measurement_interval=5,
     replication_count=4
 )
+
+
+## SETUP LOGGER ##
+# register custom log levels
+logger.set_channel('recieved_message', True)
+logger.set_channel('send_message', True)
+logger.set_channel('measurement', True)
+logger.set_channel('routing', True)
+
 
 ##### START NODE #####
 # start event loop and run forever
