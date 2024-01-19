@@ -56,6 +56,7 @@ async def msgs_ack():
         asyncio.sleep(5)
     
 
+
 async def assemble_msgs():
     """
     This function mimics the receiving of 3 frames with separate data. And sends ACK's for each message. 
@@ -64,16 +65,31 @@ async def assemble_msgs():
 
     amount_frames = 3
     
+    
     frames = [b'1-TEST-',b'2-TEST-',b'3-TEST']
     for i in frames:
         frame = Frame(type=Frame.FRAME_TYPES['measurment'], message=i, source_address=3,
                         destination_address=4, ttl=20,frame_num=amount_frames,ses_num=6553
                         ).serialize()
         amount_frames -= 1
-        nc.on_message(frame)
+
+    
+        node.network_controller.on_message(frame)
 
 
-loop.create_task(msgs_ack())
+    frame = Frame(type=Frame.FRAME_TYPES['measurment'], message=i, source_address=3,
+                        destination_address=4, ttl=20,frame_num=0,ses_num=6553
+                        ).serialize()
+    
+    node.network_controller.on_message(frame)
+    
+        
+        
+
+
+
+
+loop.create_task(assemble_msgs())
 
 
 loop.run_forever()
