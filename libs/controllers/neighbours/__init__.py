@@ -25,7 +25,7 @@ class NeighboursController():
         Broadcasts a message with its config for when the node starts up.
         """
         self.network.send_message(
-            Frame.FRAME_TYPES['node_joining'], self.node_config.serialize())
+            Frame.FRAME_TYPES['node_joining'], self.node_config.serialize(), self.node_config.addr)
 
     def start(self):
         loop = asyncio.get_event_loop()
@@ -45,6 +45,7 @@ class NeighboursController():
                 if node not in self.last_update or self.last_update[node] + self.max_timeout > time():
                     self.last_update.pop(node)
                     self.connections.pop(node)
+                    self.node_config.remove_neighbour(node)
 
     def handle_join(self, frame: Frame):
         """
@@ -56,6 +57,7 @@ class NeighboursController():
 
         node = NodeConfigData.deserialize(frame.data)
         self.connections[node.addr] = node
+        self.node_config.add_neighbour(node.addr, node)
         self.last_update[node.addr] = time()
         self.network.send_message(
             Frame.FRAME_TYPES['node_alive'], self.node_config.serialize(), node.addr)

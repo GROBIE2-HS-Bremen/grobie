@@ -9,6 +9,7 @@ from libs.controllers.timekeeping.RTCTimekeepingController import RTCTimekeeping
 from libs.sensors import ISensor
 from libs.controllers.storage import IStorageController
 from libs.controllers.neighbours import NeighboursController
+from libs.controllers.routing import RoutingController
 
 from libs.external.ChannelLogger import logger
 
@@ -25,6 +26,7 @@ class Node():
         self.network_controller = network_controller
         self.neighbours_controller = NeighboursController(
             node_config, network_controller)
+        self.routing_controller = RoutingController(node_config, network_controller)
         
         self.timekeeping_controller = RTCTimekeepingController()
 
@@ -37,7 +39,12 @@ class Node():
                 lambda m: logger((type(m), str(m)), channel='measurement'),
                 lambda measurement: self.store_measurement(measurement),
                 lambda measurement: network_controller.send_message(
-                    1, measurement.encode())
+                    1, measurement.encode(), node_config.addr, 55),
+                lambda measurement: print(node_config.addr)
+
+
+
+                # add address to  send measurement to.
             ])
 
         self.config_controller = ConfigController(
@@ -71,13 +78,17 @@ class Node():
                                                   self.neighbours_controller.handle_join)
         self.network_controller.register_callback(Frame.FRAME_TYPES['node_leaving'],
                                                   self.neighbours_controller.handle_leave)
+        self.network_controller.register_callback(Frame.FRAME_TYPES['route_request'],
+                                                  self.routing_controller.handle_route_request)
+        self.network_controller.register_callback(Frame.FRAME_TYPES['route_response'],
+                                                  self.routing_controller.handle_route_response)
         self.network_controller.register_callback(-1,
                                                   self.neighbours_controller.handle_alive)
         
         self.network_controller.register_callback(Frame.FRAME_TYPES['sync_time'],
                                                     lambda frame: self.timekeeping_controller.sync_time(int.from_bytes(frame.data, 'big')))
-
-        
+        #TODO: call handle route request when we get a route request
+        #TODO: call handle route response when we get a route response
 
         logger('node has been initialized, starting controllers', channel='info')
 

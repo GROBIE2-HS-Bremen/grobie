@@ -41,6 +41,9 @@ class NodeConfigData:
         self.measurement_interval = measurement_interval
         self.replication_count = replication_count
         self.bidding_wait = bidding_wait
+        self.routing_table = {}
+        self.neighbours = {}
+        
 
         if replications is None:
             replications = {}
@@ -60,6 +63,16 @@ class NodeConfigData:
     def deserialize(bits):
         """ deserialize the node config """
         return NodeConfigData(**umsgpack.loads(bits))
+
+    def add_neighbour(self, addr, node_config):
+        print("adding neighbour")
+        self.neighbours[addr] = node_config
+        print(self.neighbours)
+
+    def remove_neighbour(self, addr):
+        print("removing neighbour")
+        self.neighbours.pop(addr)
+
 
     def clone(self):
         return self.deserialize(self.serialize())

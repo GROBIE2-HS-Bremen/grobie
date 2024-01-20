@@ -1,6 +1,8 @@
 import asyncio
 from libs.E220 import E220, MODE_CONFIG, MODE_NORMAL
 from libs.controllers.network import Frame, INetworkController
+from libs.controllers.routing import RoutingController
+
 
 from libs.external.ChannelLogger import logger
 
@@ -15,6 +17,8 @@ class E220NetworkController(INetworkController):
 
         self.e220.set_mode(MODE_CONFIG)
         self.e220.get_settings()
+        
+        self.routing_controller = RoutingController()
 
         if set_config: 
             import config as cfg
@@ -39,8 +43,23 @@ class E220NetworkController(INetworkController):
                 self.on_message(d)
             await asyncio.sleep(0.1)
 
-    def _send_message(self, type: int, message: bytes, addr=255):
-        frame = Frame(type, message, self.address, addr)
+    def _send_message(self, type: int, message: bytes, source: int, addr: int):
+        print("this function is called" + str(type) + str(message) + str(addr))
+        #frame = Frame(type, message, self.address, addr)
+        last_hop = self.address
+        frame = Frame(type, message, source, addr, last_hop)
+                # Get the address of the next hop
+        if addr != 255:
+            print("looking up address")
+            #TODO: fix this
+            #addr = RoutingController.get_route(self, addr)
+            pass
+        # Node out of reach of network
+        if addr == -1:
+            
+            self.q.append((type, message, source, addr))
+            
+            return
         logger(f'sending frame {frame.__dict__}', channel='send_message')
         self.e220.send((0xff00 + addr).to_bytes(2, 'big'), frame.serialize())
 
