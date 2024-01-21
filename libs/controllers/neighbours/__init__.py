@@ -28,6 +28,7 @@ class NeighboursController():
             Frame.FRAME_TYPES['node_joining'], self.node_config.serialize(), self.node_config.addr)
 
     def start(self):
+        print("starting neighbours controller")
         loop = asyncio.get_event_loop()
         loop.create_task(self.broadcast_alive_loop())
         loop.create_task(self.nodes_alive_loop())
@@ -58,6 +59,8 @@ class NeighboursController():
         node = NodeConfigData.deserialize(frame.data)
         self.connections[node.addr] = node
         self.node_config.add_neighbour(node.addr, node)
+        print("node joining")
+        print(self.connections)
         self.last_update[node.addr] = time()
         self.network.send_message(
             Frame.FRAME_TYPES['node_alive'], self.node_config.serialize(), node.addr)

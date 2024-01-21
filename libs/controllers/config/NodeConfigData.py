@@ -41,7 +41,7 @@ class NodeConfigData:
         self.measurement_interval = measurement_interval
         self.replication_count = replication_count
         self.bidding_wait = bidding_wait
-        self.routing_table = {}
+        self.routing_table: dict[int, tuple[int, int]] = {1: [2,3], 3:[3,2]}    # destination: (next_hop, hops)
         self.neighbours = {}
         
 

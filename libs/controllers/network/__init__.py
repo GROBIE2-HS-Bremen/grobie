@@ -74,12 +74,14 @@ class INetworkController:
     def _thread(self):
         while True:
             if len(self.q) > 0:
-                type, message, source, addr = self.q.pop()
-                self._send_message(type, message, source, addr)
+                type, message, source, destination, addr = self.q.pop()
+               
+                self._send_message(type, message, source, destination, addr)
+                #self.q.pop()
             else:
                 time.sleep(0.001)
 
-    def _send_message(self, type: int, message: bytes, source: int, addr=255):
+    def _send_message(self, type: int, message: bytes, source: int, destination: int, addr=255):
         """ send a message to the specified address """
         raise NotImplementedError()
 
@@ -91,11 +93,13 @@ class INetworkController:
         """ stop the network controller """
         self.task.cancel()
 
-    def send_message(self, type: int, message: bytes, source: int, addr=255):
+    def send_message(self, type: int, message: bytes, source: int, destination=255, addr=255):
         """ send a message to the specified address """
         print("this message function is also called")
-        last_hop = self.address
-        self.q.append((type, message, source, addr))
+ 
+        self.q.append((type, message, source, destination, addr))
+        # print("this is the queue in INetworkController")
+        # print(self.q)
 
     def register_callback(self, addr: int, callback):
         """ register a callback for the specified address """
@@ -112,18 +116,23 @@ class INetworkController:
         print("this is the destination address")
         print(frame.destination_address)
 
-        print("on_message")
+        # print("on_message")
+       
 
-        if frame.destination_address != self.address and frame.destination_address != 255:
-            print(self.address)
-            print("this frame is not for me")
-            if frame.type == Frame.FRAME_TYPES['route_request'] or frame.type == Frame.FRAME_TYPES['route_response']:
+        
+            
+        # print("frame type is", frame.type)
+        # print("should be", Frame.FRAME_TYPES['route_request'])
+        if frame.type == Frame.FRAME_TYPES['route_request']:
                 print("this frame is a route request")
+                pass
+        elif frame.type == Frame.FRAME_TYPES['route_response']:
+                print("this frame is a route response")
+                pass
+        elif frame.destination_address != self.address and frame.destination_address != 255:
+                print("this frame is not for me, sending message")
+                self.send_message(frame.type, frame.data, frame.source_address, frame.destination_address, frame.destination_address)
                 return
-
-            return
-        else:
-            print("this frame is for me")
 
         #TODO check if frame is for this node, if not, forward it before the callbacks are called -> this is the routing part,call send_message, there the route is checked.
         # get all the callback functions

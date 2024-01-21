@@ -26,7 +26,9 @@ class Node():
         self.network_controller = network_controller
         self.neighbours_controller = NeighboursController(
             node_config, network_controller)
-        self.routing_controller = RoutingController(node_config, network_controller)
+        self.node_config = node_config
+        # self.node_config.routing_table = {4, 5, 6, 7, 8, 9, 10}
+        self.routing_controller = RoutingController(self.node_config, network_controller)
         
         self.timekeeping_controller = RTCTimekeepingController()
 
@@ -38,9 +40,17 @@ class Node():
             actions=[
                 lambda m: logger((type(m), str(m)), channel='measurement'),
                 lambda measurement: self.store_measurement(measurement),
+                # lambda measurement: network_controller.send_message(
+                #      1, measurement.encode(), node_config.addr, 255, 255),
                 lambda measurement: network_controller.send_message(
-                    1, measurement.encode(), node_config.addr, 55),
-                lambda measurement: print(node_config.addr)
+                     1, measurement.encode(), node_config.addr, 65532, 65532),
+                lambda measurement: network_controller.send_message(
+                     1, measurement.encode(), node_config.addr, 65531, 65531),
+                # lambda measurement: network_controller.send_message(
+                #      1, measurement.encode(), node_config.addr, 65533, 65533),
+                lambda measurement: print(node_config.addr),
+                # lambda measurement: network_controller.send_message(
+                #      0x0a, measurement.encode(), node_config.addr)
 
 
 

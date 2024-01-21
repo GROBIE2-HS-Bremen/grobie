@@ -34,6 +34,8 @@ node_config = NodeConfigData(
     replication_count=4
 )
 
+network_controller = E220NetworkController(E220(uart=uart, m0=m0, m1=m1), node_config, set_config=False)
+
 
 ## SETUP LOGGER ##
 # register custom log levels
@@ -49,9 +51,11 @@ loop = asyncio.get_event_loop()
 node = Node(
     sensors=sensors,
     storage_controller=sc,
-    network_controller=nc,  # use e220 as network controller
+    network_controller=network_controller,  # use e220 as network controller
     node_config=node_config,
 )
+
+
 
 # async def a():
 #     from libs.controllers.network import Frame
