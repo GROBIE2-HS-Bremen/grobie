@@ -1,6 +1,7 @@
 import asyncio
 from libs.E220 import E220
 from libs.controllers.network import Frame, INetworkController
+from libs.external.ChannelLogger import logger
 import random
 import time
 
@@ -20,39 +21,48 @@ class NetworkHandler():
         self.max_tries = max_tries
 
         self.rcv_ack = False
-        self.rxSegments = bytearray()
-
-
-
 
     
     def cb_incoming_ack(self,message):
         """
         Callback for incoming ACK to extend into receive buffer
         """
-        # The right ack
+
         if message.type == Frame.FRAME_TYPES['acknowledgement']:
             self.rcv_ack = True
+           
         
-    
     def wait_for_ack(self,message,addr,ctr=1):
         """
         Check buffer to see if ACK has been received.
         """
+        if addr == 0xFFFF:
+            return
+        
+        rt = 1
+        
         if ctr > self.max_tries:
             return False
         
-        last_time = time.time() + 1
+        elif ctr > 1:
+            rt = random.randint(1,ctr)
+            last_time = time.time() + rt
+
+        else:
+            last_time = time.time() + 1
+
+        
         while time.time() < last_time:
             # If we have received the ack in the buffer
             if self.rcv_ack:
+                logger("Received ACK")
                 self.rcv_ack = False
                 return True
             else:
                 time.sleep(0.1)
         
         # No ack received within time because ack/data got lost -> send repeat
-        print(f"Not received ack in time, trying again {ctr}/{self.max_tries}")
+        logger(f"Not received ack in time, trying again {ctr}/{self.max_tries} with timeout of {rt} seconds.")
         self.e220.send(addr,message)
         self.wait_for_ack(message,addr,ctr+1)
     
@@ -69,36 +79,31 @@ class NetworkHandler():
             return self.e220.send(addr,message)
 
 
-        
         self.e220.send(addr,message)
         received = self.wait_for_ack(message,addr)
 
         if received == True:
-            print(f"[+] ACK received.")
+            logger(f"[+] ACK received.")
         
         elif received == False:
-            print(f"[-] ACK not received.")
+            logger(f"[-] ACK not received.")
       
 
-    def transmit_ack(self,message):
-
-
-        if message.type == Frame.FRAME_TYPES['acknowledgement'] or message.destination_address == 255:
-            print('[+] Received broadcast/ack')
-            return
+    def transmit_ack(self,frame):
+        """
+        Send ACK when message is arrived.
+        """
         
-        # end-to-end acks. If the message was intended for this node then send ack back.
-        elif message.destination_address == self.nc.address:
-            
-            print(f"Sending ACK to node {message.source_address} from node {self.nc.address}")
-            
+        # If intended for this end-device send ACK.
+        if frame.destination_address == self.nc.address:
             ackmsg = Frame(type=Frame.FRAME_TYPES['acknowledgement'], message=b'', source_address=self.nc.address,
-                        destination_address=message.source_address, ttl=20
+                        destination_address=frame.source_address, ttl=20,frame_num=0,ses_num=frame.ses_num
                         ).serialize()
             
-            self.e220.send(message.source_address.to_bytes(2,'big'),ackmsg)
-            
-            print(f"[+] Done sending ACK node {self.nc.address}->{message.source_address}")
-        #print(message.destination_address, self.nc.address, type(message.destination_address), type(self.nc.address))
+            self.e220.send(frame.source_address.to_bytes(2,'big'),ackmsg)
+            logger(f"[+] Done sending ACK node {self.nc.address} -> {frame.source_address}")
+        
+        else:
+            return
         
          

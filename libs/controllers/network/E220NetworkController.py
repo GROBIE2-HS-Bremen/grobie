@@ -47,21 +47,27 @@ class E220NetworkController(INetworkController):
             if d:
                 self.on_message(d)
             await asyncio.sleep(0.1)
-    
+
 
     def handle_packet(self,frame: Frame):
-       
-        sessions = self.sessions
-        frame_order = self.frame_order
+        
+        # Frame_order and sessions two dicts because of easier management.
+   
+        
+        if frame.type == Frame.FRAME_TYPES['acknowledgement']:
+            logger('Received ACK')
+            return frame
+        
+            
 
-        # Not closing packet or single packet..
+        # If multiple frames expected make session.
         if frame.frame_num != 0:
 
             # Make session if it does not exists
-            if not sessions.get(frame.ses_num):
-                print('[+] Adding session')
+            if not self.sessions.get(frame.ses_num):
+                logger('[+] Adding session')
 
-                sessions[frame.ses_num] = {
+                self.sessions[frame.ses_num] = {
                     'destination_address':frame.destination_address,
                     'ttl':frame.ttl,
                     'source_address':frame.source_address,
@@ -71,40 +77,42 @@ class E220NetworkController(INetworkController):
                     'data':b''
                 }
             
-            # Initialize the frame_order list thing
-            if frame.ses_num not in frame_order:
-                frame_order[frame.ses_num] = [None]*(frame.frame_num)
+            # Initialize the frame_order list for incoming frames
+            if frame.ses_num not in self.frame_order:
+                self.frame_order[frame.ses_num] = [None]*(frame.frame_num)
 
-            
-            frame_order[frame.ses_num][frame.frame_num-1] = frame.data
-         
-    
+            try:
+                self.frame_order[frame.ses_num][frame.frame_num-1] = frame.data
+
+            except IndexError:
+                logger("[*] Out of order frame number. However session is recovered.")
+                self.frame_order[frame.ses_num].append(frame.data)
+
+            # Ack not send for broadcast.
             self.network_handler.transmit_ack(frame)
 
 
         # If session exists and CLOSING packet we assemble everything and return it.
-        elif frame.ses_num in sessions and frame.frame_num == 0:
+        elif frame.ses_num in self.sessions and frame.frame_num == 0:
             
-        
-            if None in frame_order[frame.ses_num]:
-                return False
+            if None in self.frame_order[frame.ses_num]:
+                logger(f"[-] Message not complete!")
+                # TODO Think about deleting session if packet is incomplete.
+                return
             
-            
-            frame_order[frame.ses_num].reverse()
+            data = b''.join(self.frame_order[frame.ses_num][::-1])
+            self.sessions[frame.ses_num]['data'] = data
 
-            
-            data = b''.join(frame_order[frame.ses_num])
-            sessions[frame.ses_num]['data'] = data
-
+          
             self.network_handler.transmit_ack(frame)
 
-
-            packet = sessions[frame.ses_num]
-            print('[+] Complete packet is:')
-            print(packet)
+            packet = self.sessions[frame.ses_num]
+            logger(f'[+] Complete packet is: {packet}')
             
-            del sessions[frame.ses_num]
-            del frame_order[frame.ses_num]
+            del self.sessions[frame.ses_num]
+            del self.frame_order[frame.ses_num]
+            
+            logger(f"[X] Session {frame.ses_num} deleted.")
             
             return Frame(
                 type=packet['type'],
@@ -117,12 +125,12 @@ class E220NetworkController(INetworkController):
 
         
         else:
-            print('[+] Single packet received')
-            
+            logger('[+] Single packet received')
             self.network_handler.transmit_ack(frame)
-
             return frame
         
+
+
     def send_message(self, type: int, message: bytes, addr=255,ttl=20,datasize=188):
         """ send a message to the specified address splits into multiple messages if needed.
         Ebyte module sends data in one continous message if data is 199 bytes or lower.
@@ -137,6 +145,7 @@ class E220NetworkController(INetworkController):
             # Random sessionnumber
             # 2 bytes
             ses_num = random.randint(1,60000)
+            
             
             # Amount of frames to send
             frame_num = length_msg // datasize + 1
@@ -162,15 +171,15 @@ class E220NetworkController(INetworkController):
 
             
         for msg in data_splits:
-            print(f"Sending package - {msg} with session number {ses_num} and frame number {frame_num}")
-            frame = Frame(type,msg,self.address,addr,ttl,ses_num,frame_num)
+            logger(f"Sending package - {msg} with session number {ses_num} and frame number {frame_num}")
+            frame = Frame(type,msg,self.address,addr,ttl,frame_num,ses_num)
             self.network_handler.transmit_packet(frame)
             frame_num -= 1
-        
+
         # Send closing frame.
         frame_num = 0
-        print(f"Sending CLOSING packet with session number {ses_num} and frame number {frame_num}!")
-        frame = Frame(type,b'CLOSING',self.address,addr,ttl,ses_num,frame_num)
+        logger(f"Sending CLOSING packet with session number {ses_num} and frame number {frame_num}!")
+        frame = Frame(type,b'CLOSING',self.address,addr,ttl,frame_num,ses_num)
         self.network_handler.transmit_packet(frame)
         
         

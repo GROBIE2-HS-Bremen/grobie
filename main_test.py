@@ -55,63 +55,47 @@ node = Node(
     node_config=node_config,
 )
 
-async def msgs_ack():
+async def send_frames():
     """
-    Test the splitting of messages. And ACK'S.
+    Test the splitting of messages. And receiving ACK'S.
     This message will get split in 5 packets so we need to wait on 5 ACK's. 
     """
     data = b'1TEST'+200*b'TEST'+b'TEST2'
+
     
     # We need to get 5 ACKS because sending 5 messages
     while True:
-        node.network_controller.send_message(1,data,3)
-        asyncio.sleep(5)
-    
+        node.network_controller.send_message(1,data,4)
+        await asyncio.sleep(5)
+        
 
-
-async def msgs_ack():
+async def receive_frames():
     """
-    Test the splitting of messages. And ACK'S.
-    This message will get split in 5 packets so we need to wait on 5 ACK's. 
-    """
-    data = b'1TEST'+200*b'TEST'+b'TEST2'
-    
-    # We need to get 5 ACKS because sending 5 messages
-    while True:
-        node.network_controller.send_message(1,data,3)
-        asyncio.sleep(5)
-    
-
-
-async def assemble_msgs():
-    """
-    This function mimics the receiving of 3 frames with separate data. And sends ACK's for each message. 
-    The goal is to keep track of the session and assemble the data correctly.
+    This function mimics the receiving of 5 frames with splitted data. And sends ACK's for each message (if destination is this node)
+    The goal is to keep track of the session and assemble the data correctly and ack messages.
     """
 
-    amount_frames = 3
-    
-    
-    frames = [b'1-TEST-',b'2-TEST-',b'3-TEST']
-    for i in frames:
-        frame = Frame(type=Frame.FRAME_TYPES['measurment'], message=i, source_address=3,
-                        destination_address=4, ttl=20,frame_num=amount_frames,ses_num=6553
-                        ).serialize()+b'\x00'
-        amount_frames -= 1
+    frames = [b'1test',b'2test',b'3test',b'4test',b'5test']
+
+    frame_nums = [4, 2, 1, 3, 5]
+
+    for i in frame_nums:
+        print(f"Sending frame number {i}")
+        frame = Frame(type=Frame.FRAME_TYPES['measurment'], message=frames[i-1], source_address=5,
+                    destination_address=3, ttl=20, frame_num=i, ses_num=6553
+                    ).serialize() + b'\x00'
         node.network_controller.on_message(frame)
 
-
-    frame = Frame(type=Frame.FRAME_TYPES['measurment'], message=i, source_address=3,
-                        destination_address=4, ttl=20,frame_num=0,ses_num=6553,rssi=3
+    frame = Frame(type=Frame.FRAME_TYPES['measurment'], message=b'CLOSING', source_address=5,
+                        destination_address=3, ttl=20,frame_num=0,ses_num=6553
                         ).serialize()+b'\x00'
     
     node.network_controller.on_message(frame)
     
-        
-        
 
 
-#loop.create_task(msgs_ack())
+loop.create_task(send_frames())
+
 
 
 # async def a():
