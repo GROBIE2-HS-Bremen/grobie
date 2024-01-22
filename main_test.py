@@ -51,23 +51,6 @@ logger.set_channel('routing', False)
 # start event loop and run forever
 loop = asyncio.get_event_loop()
 
-try: 
-    # create node and loop in try except block to catch keyboard interrupt\
-    # this way we can stop everything
-    node = Node(
-        sensors=sensors,
-        storage_controller=sc,
-        network_controller=nc,  # use e220 as network controller
-        node_config=node_config,
-    )
-
-    loop.run_forever()
-except KeyboardInterrupt:
-    del node
-
-except Exception as e:
-    logger((e,), channel='error')
-    raise e
 
 
 async def send_frames():
@@ -112,8 +95,29 @@ async def receive_frames():
     node.network_controller.on_message(frame)
     
 
+try: 
+    # create node and loop in try except block to catch keyboard interrupt\
+    # this way we can stop everything
+    node = Node(
+        sensors=sensors,
+        storage_controller=sc,
+        network_controller=nc,  # use e220 as network controller
+        node_config=node_config,
+    )
 
-loop.create_task(send_frames())
+    loop.create_task(send_frames())
+
+    loop.run_forever()
+except KeyboardInterrupt:
+    del node
+
+except Exception as e:
+    logger((e,), channel='error')
+    raise e
+
+
+
+
 
 
 

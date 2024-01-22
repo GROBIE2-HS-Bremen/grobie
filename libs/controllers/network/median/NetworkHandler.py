@@ -1,5 +1,5 @@
 import asyncio
-from libs.E220 import E220
+from libs.controllers.network.E220NetworkController import E220
 from libs.controllers.network import Frame, INetworkController
 from libs.external.ChannelLogger import logger
 import random
