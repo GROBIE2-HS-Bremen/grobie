@@ -158,6 +158,7 @@ WOR Cycle:                  {self.wor_cycle}ms"""
         sleep_ms(100)
         self.read()
 
+        sleep_ms(1000)
     def save(self) -> None:
         header = b'\xc0\x00\x06'
 
