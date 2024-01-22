@@ -5,6 +5,7 @@ from libs.controllers.measurement.Measurement import Measurement
 from libs.controllers.database.BinaryKV import BinarKVDatabase
 from libs.controllers.measurement import MeasurementController
 from libs.controllers.replication import ReplicationController
+from libs.controllers.database.CsvDatabase import CsvDatabase
 from libs.controllers.neighbours import NeighboursController
 from libs.controllers.network import INetworkController
 from libs.controllers.storage import IStorageController
@@ -28,11 +29,17 @@ class Node():
         self.storage_controller = storage_controller
         self.storage_controller.mount('/sd')
 
+        # setup config controller
+        self.config_controller = ConfigController(
+            config=node_config,
+            send_message=network_controller.send_message
+        )
+
         # setup network and routing related controllers
         self.network_controller = network_controller
         self.neighbours_controller = NeighboursController(
-            node_config, 
-            network_controller
+            config_controller=self.config_controller, 
+            network=network_controller
         )
         
 
@@ -50,15 +57,11 @@ class Node():
                 )
             ])
 
-        self.config_controller = ConfigController(
-            config=node_config,
-            send_message=network_controller.send_message
-        )
 
         self.replication_controller = ReplicationController(self.config_controller)
 
         filepath = '/sd/data.db'
-        self.database_controller = BinarKVDatabase(
+        self.database_controller = CsvDatabase(
             filepath, self.storage_controller)
 
         # register routing callbacks
@@ -68,11 +71,12 @@ class Node():
             Frame.FRAME_TYPES['node_leaving']: [self.neighbours_controller.handle_leave],
         })
 
-        # register message callbacks
+        # register measurement callbacks
         self.network_controller.register_callbacks({
             Frame.FRAME_TYPES['config']: [self.config_controller.handle_message],
             Frame.FRAME_TYPES['measurement']: [self.store_measurement_frame],
-            Frame.FRAME_TYPES['replication']: [self.replication_controller.handle_bid],            
+            Frame.FRAME_TYPES['replication']: [self.replication_controller.handle_bid],
+            Frame.FRAME_TYPES['discovery']: [lambda _: self.config_controller.broadcast_config()],            
         })
 
         # extra callbacks
@@ -123,20 +127,27 @@ class Node():
         )
 
     def store_measurement_frame(self, frame: Frame):
+        # check if in ledger
+        if frame.source_address not in self.replication_controller.config_controller.ledger:
+            # send a discovery message
+            self.network_controller.send_message(
+                Frame.FRAME_TYPES['discovery'], 
+                b'',
+                frame.source_address
+            )
+            return
+
         # check if we should store
         if self.replication_controller.are_replicating(frame.source_address):
+            print('store measurement', frame.source_address)
             measurement = Measurement.decode(frame.data)
-            return self.store_measurement(measurement)
+            return self.store_measurement(measurement, frame.source_address)
 
         # check if it needs new replications
         if self.replication_controller.should_replicate(frame.source_address):
-            # check if we have enough replications
-            if len(self.replication_controller.config_controller.ledger[frame.source_address].replications) < \
-                    self.replication_controller.config_controller.ledger[frame.source_address].replication_count:
-                # send a bid
-                self.network_controller.send_message(
-                    3, frame.ttl.to_bytes(4, 'big'), frame.source_address)
-                return
+            self.network_controller.send_message(
+                3, frame.ttl.to_bytes(4, 'big'), frame.source_address)
+            return
 
     def store_measurement(self, measurement: Measurement, address=None):
         # if no address is passed we will use our own

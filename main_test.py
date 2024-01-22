@@ -28,7 +28,7 @@ sc = StorageControllerFactory.get_controller(
 uart = UART(1, baudrate=9600, rx=Pin(5), tx=Pin(4), timeout=15)
 m0 = Pin(26, Pin.OUT)
 m1 = Pin(15, Pin.OUT)
-nc = E220NetworkController(E220(uart=uart, m0=m0, m1=m1), set_config=False)
+nc = E220NetworkController(E220(uart=uart, m0=m0, m1=m1), set_config=True)
 
 # Config
 node_config = NodeConfigData(
@@ -37,13 +37,12 @@ node_config = NodeConfigData(
     replication_count=4
 )
 
-
 ## SETUP LOGGER ##
 # register custom log levels
 logger.set_channel('recieved_message', True)
 logger.set_channel('send_message', True)
-logger.set_channel('measurement', True)
-logger.set_channel('routing', True)
+logger.set_channel('measurement', False)
+logger.set_channel('routing', False)
 
 
 ##### START NODE #####
