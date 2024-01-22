@@ -38,7 +38,7 @@ class Frame:
 
     @staticmethod
     def deserialize(frame: bytes):
-        rssi = -1
+        rssi = 1
         type = frame[0]
         source_address = int.from_bytes(frame[1:3], 'big')
         destination_address = int.from_bytes(frame[3:5], 'big')
