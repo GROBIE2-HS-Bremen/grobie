@@ -1,8 +1,6 @@
+from libs.helpers.dict import DiffChange, diff_dict
 import libs.external.umsgpack as umsgpack
-from libs.helpers.dict import DiffChange, apply_diff, diff_dict
 
-
-# from libs.helpers.dict import apply_diff, diff_dict
 
 class NodeConfigData:
     """ 

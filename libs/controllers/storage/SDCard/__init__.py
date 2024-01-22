@@ -1,10 +1,10 @@
-from machine import SPI, Pin
 from libs.controllers.storage.SDCard.SDCard import SDCard
 from libs.controllers.storage import IStorageController
+from libs.external.ChannelLogger import logger
 
 from uos import mount, umount, VfsFat, mkdir
+from machine import SPI, Pin
 
-from libs.external.ChannelLogger import logger
 
 
 class SDCardStorageController(IStorageController):

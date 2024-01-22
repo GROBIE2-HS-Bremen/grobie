@@ -1,8 +1,5 @@
 import libs.external.umsgpack as umsgpack
 
-import math
-
-
 class Measurement:
     data: dict[str, float | int]
     timestamp: int

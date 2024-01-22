@@ -1,8 +1,9 @@
-import asyncio
-from libs.E220 import E220, MODE_CONFIG, MODE_NORMAL
+from libs.controllers.network.E220NetworkController.E220 import E220, MODE_CONFIG, MODE_NORMAL
 from libs.controllers.network import Frame, INetworkController
-
 from libs.external.ChannelLogger import logger
+
+import asyncio
+
 
 
 class E220NetworkController(INetworkController):

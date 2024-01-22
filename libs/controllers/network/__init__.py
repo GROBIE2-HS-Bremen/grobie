@@ -1,13 +1,14 @@
-import asyncio
-import _thread
-import time
 import config as cfg
+
+import _thread
+import asyncio
+import time
 
 
 class Frame:
     FRAME_TYPES = {
         'discovery':    0x00,
-        'measurment':   0x01,
+        'measurement':  0x01,
         'config':       0x02,
         'replication':  0x03,
         'node_joining': 0x06,
@@ -54,11 +55,11 @@ class INetworkController:
 
     task: asyncio.Task
     callbacks: dict[int, list]
-    q: list
+    queue: list
 
     def __init__(self):
         self.callbacks = {}
-        self.q = []
+        self.queue = []
 
     def start(self):
         """ start the network controller """
@@ -67,10 +68,11 @@ class INetworkController:
         # start a thread
         self.thread = _thread.start_new_thread(self._thread, ())
 
+    killed = False
     def _thread(self):
-        while True:
-            if len(self.q) > 0:
-                type, message, addr = self.q.pop()
+        while True and not self.killed:
+            if len(self.queue) > 0:
+                type, message, addr = self.queue.pop()
                 self._send_message(type, message, addr)
             else:
                 time.sleep(0.001)
@@ -86,10 +88,12 @@ class INetworkController:
     def stop(self):
         """ stop the network controller """
         self.task.cancel()
+        self.killed = True
+        
 
     def send_message(self, type: int, message: bytes, addr=0xffff):
         """ send a message to the specified address """
-        self.q.append((type, message, addr))
+        self.queue.append((type, message, addr))
 
     def register_callback(self, addr: int, callback):
         """ register a callback for the specified address """
@@ -97,6 +101,12 @@ class INetworkController:
             self.callbacks[addr] = []
 
         self.callbacks[addr].append(callback)
+
+    def register_callbacks(self, callbacks: dict[int, list]):
+        """ register multiple callbacks """
+        for frame_type in callbacks.keys():
+            for callback in callbacks[frame_type]:
+                self.register_callback(frame_type, callback)
 
     def on_message(self, message: bytes):
         """ called when a message is recieved """
@@ -116,3 +126,6 @@ class INetworkController:
     def address(self) -> int:
         """ the address of the node """
         return int.from_bytes(b'\x00\x00', 'big')
+
+    def __del__(self):
+        self.stop()
