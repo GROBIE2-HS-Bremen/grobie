@@ -2,7 +2,6 @@ from libs.external.reedsolo import *
 
 import array
 
-
 class CRC:
     def __init__(self):
         self.corrector = RSCodec(5)

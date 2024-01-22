@@ -1,10 +1,9 @@
-import config as cfg
-
 import _thread
 import asyncio
 import time
 
 from libs.external.ChannelLogger import logger
+from libs.controllers.network.error.CRC import CRC
 
 
 class Frame:
@@ -37,17 +36,11 @@ class Frame:
         ])
 
     @staticmethod
-    def deserialize(frame: bytes):
+    def deserialize(frame: bytes, rssi: int = 1):
         type = frame[0]
         source_address = int.from_bytes(frame[1:3], 'big')
         destination_address = int.from_bytes(frame[3:5], 'big')
         message = frame[5:]
-        rssi = 1
-
-        if cfg.rssi_enabled:  # type: ignore
-            rssi = - (256 - message[-1])
-
-            message = message[:-1]
 
         return Frame(type, message, source_address, destination_address, rssi=rssi)
 
@@ -58,10 +51,12 @@ class INetworkController:
     task: asyncio.Task
     callbacks: dict[int, list]
     queue: list
+    crc: CRC
 
     def __init__(self):
         self.callbacks = {}
         self.queue = []
+        self.crc = CRC()
 
     def start(self):
         """ start the network controller """
@@ -71,6 +66,7 @@ class INetworkController:
         self.thread = _thread.start_new_thread(self._thread, ())
 
     killed = False
+
     def _thread(self):
         while True and not self.killed:
             if len(self.queue) > 0:
@@ -83,6 +79,9 @@ class INetworkController:
         """ send a message to the specified address """
         raise NotImplementedError()
 
+    def _decode_message(self, message: bytes):
+        return Frame.deserialize(message)
+
     async def _start(self):
         """ the main loop of the network controller """
         raise NotImplementedError()
@@ -91,7 +90,6 @@ class INetworkController:
         """ stop the network controller """
         self.task.cancel()
         self.killed = True
-        
 
     def send_message(self, type: int, message: bytes, addr=0xffff):
         """ send a message to the specified address """
@@ -111,8 +109,13 @@ class INetworkController:
                 self.register_callback(frame_type, callback)
 
     def on_message(self, message: bytes):
-        """ called when a message is recieved """
-        frame = Frame.deserialize(message)
+        """ called when a message is received """
+        frame = self._decode_message(message)
+
+        if frame is None:
+            logger(f"Failed to decode message [{message}]", channel='error')
+
+            return None
 
         # call all the callbacks
         for callback in self.callbacks.get(-1, []):
