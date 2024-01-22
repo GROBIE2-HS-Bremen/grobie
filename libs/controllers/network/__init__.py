@@ -4,6 +4,8 @@ import _thread
 import asyncio
 import time
 
+from libs.external.ChannelLogger import logger
+
 
 class Frame:
     FRAME_TYPES = {
@@ -114,10 +116,18 @@ class INetworkController:
 
         # call all the callbacks
         for callback in self.callbacks.get(-1, []):
-            callback(frame)
+            try: 
+                callback(frame)
+            except Exception as e:
+                callback_name = callback.__name__ if hasattr(callback, '__name__') else callback
+                logger(f'error in callback {callback_name} with message {frame}: {e}', channel='error')
 
         for callback in self.callbacks.get(frame.type, []):
-            callback(frame)
+            try: 
+                callback(frame)
+            except Exception as e:
+                callback_name = callback.__name__ if hasattr(callback, '__name__') else callback
+                logger(f'error in callback {callback_name} with message {frame}: {e}', channel='error')
 
     @property
     def address(self) -> int:
