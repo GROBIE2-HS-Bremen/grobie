@@ -1,16 +1,18 @@
 import asyncio
-from libs.E220 import E220
 import _thread
 import time
-import math
+
 
 import config as cfg
+
+
+from libs.external.ChannelLogger import logger
 
 
 class Frame: 
     FRAME_TYPES = {
         'discovery':    0x00,
-        'measurment':   0x01,
+        'measurement':  0x01,
         'config':       0x02,
         'replication':  0x03,
         'acknowledgement':0x04,
@@ -79,11 +81,11 @@ class INetworkController:
 
     task: asyncio.Task
     callbacks: dict[int, list]
-    q: list
+    queue: list
 
     def __init__(self):
         self.callbacks = {}
-        self.q = []
+        self.queue = []
 
     def start(self):
         """ start the network controller """
@@ -92,10 +94,11 @@ class INetworkController:
         # start a thread
         self.thread = _thread.start_new_thread(self._thread, ())
 
+    killed = False
     def _thread(self):
-        while True:
-            if len(self.q) > 0:
-                type, message, addr = self.q.pop()
+        while True and not self.killed:
+            if len(self.queue) > 0:
+                type, message, addr = self.queue.pop()
                 self._send_message(type, message, addr)
             else:
                 time.sleep(0.001)
@@ -110,18 +113,25 @@ class INetworkController:
     def stop(self):
         """ stop the network controller """
         self.task.cancel()
-
+        self.killed = True
+        
+    
     def send_message(self, type: int, message: bytes, addr=0xffff):
         """ send a message to the specified address """
-        self.q.append((type, message, addr))
+        self.queue.append((type, message, addr))
 
-
-    def register_callback(self, type: int, callback):
+    def register_callback(self, addr: int, callback):
         """ register a callback for the specified address """
-        if type not in self.callbacks:
-            self.callbacks[type] = []
+        if addr not in self.callbacks:
+            self.callbacks[addr] = []
 
-        self.callbacks[type].append(callback)
+        self.callbacks[addr].append(callback)
+
+    def register_callbacks(self, callbacks: dict[int, list]):
+        """ register multiple callbacks """
+        for frame_type in callbacks.keys():
+            for callback in callbacks[frame_type]:
+                self.register_callback(frame_type, callback)
 
     def handle_packet(self,frame):
         raise NotImplementedError()
@@ -148,15 +158,25 @@ class INetworkController:
             cb(frame)
         
 
-        # print(callbacks)        
         # call all the callbacks
-        #for callback in self.callbacks:
-        #     callback(frame)
+        for callback in self.callbacks.get(-1, []):
+            try: 
+                callback(frame)
+            except Exception as e:
+                callback_name = callback.__name__ if hasattr(callback, '__name__') else callback
+                logger(f'error in callback {callback_name} with message {frame}: {e}', channel='error')
 
+        for callback in self.callbacks.get(frame.type, []):
+            try: 
+                callback(frame)
+            except Exception as e:
+                callback_name = callback.__name__ if hasattr(callback, '__name__') else callback
+                logger(f'error in callback {callback_name} with message {frame}: {e}', channel='error')
 
     @property
     def address(self) -> int:
         """ the address of the node """
         return int.from_bytes(b'\x00\x00', 'big')
-    
 
+    def __del__(self):
+        self.stop()

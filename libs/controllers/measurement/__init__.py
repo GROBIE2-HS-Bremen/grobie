@@ -1,6 +1,7 @@
 from libs.controllers.measurement.Measurement import Measurement
 from libs.controllers.timekeeping import ITimekeepingController
 from libs.sensors import ISensor
+
 import asyncio
 
 
@@ -11,9 +12,9 @@ class MeasurementController:
         self.actions = actions
         self.timekeeping_controller = timekeeping_controller
 
-    def start(self, period: int = 1000):
+    def start(self, period: int = 1):
         loop = asyncio.get_event_loop()
-        self.t = loop.create_task(self._start(period))
+        self.t = loop.create_task(self._start(period * 1000))
 
     def stop(self):
         self.t.cancel()

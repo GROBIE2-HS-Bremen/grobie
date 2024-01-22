@@ -1,5 +1,6 @@
-import array
 from libs.external.reedsolo import *
+
+import array
 
 
 class CRC:
