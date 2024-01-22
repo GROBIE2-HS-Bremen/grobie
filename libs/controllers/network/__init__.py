@@ -116,8 +116,14 @@ class INetworkController:
 
         if frame is None:
             logger(f"Failed to decode message [{message}]", channel='error')
-
             return None
+
+        if frame.type not in [Frame.FRAME_TYPES['routing_request'], Frame.FRAME_TYPES['routing_response']] and frame.destination_address != self.address and frame.destination_address != 0xffff:
+            logger(
+                f'Got data for a different node, ignoring and pushing on queue', channel='routing')
+            self.send_message(frame.type, frame.data,
+                              frame.destination_address)
+            return
 
         # Don't allow direct messaging between some nodes.
         # TODO: Probably remove this.
