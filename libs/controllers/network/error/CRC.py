@@ -1,6 +1,7 @@
 from libs.external.reedsolo import *
 
 import array
+import config as cfg
 
 
 class CRC:
@@ -36,6 +37,9 @@ class CRC:
 
     def decode(self, frame: bytes) -> bytearray | None:
         try:
+            if cfg.rssi_enabled:
+                frame = frame[:-1]
+
             decoded = self.corrector.decode(frame)[0]
 
             crc = decoded[-2:]

@@ -9,14 +9,14 @@ from libs.controllers.network.error.CRC import CRC
 
 class Frame:
     FRAME_TYPES = {
-        'discovery': 0x00,
-        'measurement': 0x01,
-        'config': 0x02,
-        'replication': 0x03,
+        'discovery':    0x00,
+        'measurement':  0x01,
+        'config':       0x02,
+        'replication':  0x03,
         'node_joining': 0x06,
         'node_leaving': 0x07,
-        'node_alive': 0x08,
-        'sync_time': 0x0f,
+        'node_alive':   0x08,
+        'sync_time':    0x0f,
     }
 
     def __init__(self, type: int, message: bytes, source_address: int, destination_address: int, ttl=20, rssi=1):
@@ -38,16 +38,14 @@ class Frame:
 
     @staticmethod
     def deserialize(frame: bytes):
-        if cfg.rssi_enabled:
-            rssi = - (256 - frame[-1])
-            frame = frame[:-1]
-        else:
-            rssi = -1
-
+        rssi = -1
         type = frame[0]
         source_address = int.from_bytes(frame[1:3], 'big')
         destination_address = int.from_bytes(frame[3:5], 'big')
         message = frame[5:]
+
+        if cfg.rssi_enabled:
+            rssi = -(256 - message[-1])
 
         return Frame(type, message, source_address, destination_address, rssi=rssi)
 
