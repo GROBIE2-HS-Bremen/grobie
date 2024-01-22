@@ -46,7 +46,7 @@ class Frame:
 
         if cfg.rssi_enabled:
             rssi = -(256 - message[-1])
-            message = frame[:-1]
+            message = message[:-1]
 
         return Frame(type, message, source_address, destination_address, rssi=rssi)
 
