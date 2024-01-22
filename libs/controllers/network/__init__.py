@@ -9,14 +9,14 @@ from libs.controllers.network.error.CRC import CRC
 
 class Frame:
     FRAME_TYPES = {
-        'discovery':    0x00,
-        'measurement':  0x01,
-        'config':       0x02,
-        'replication':  0x03,
+        'discovery': 0x00,
+        'measurement': 0x01,
+        'config': 0x02,
+        'replication': 0x03,
         'node_joining': 0x06,
         'node_leaving': 0x07,
-        'node_alive':   0x08,
-        'sync_time':    0x0f,
+        'node_alive': 0x08,
+        'sync_time': 0x0f,
     }
 
     def __init__(self, type: int, message: bytes, source_address: int, destination_address: int, ttl=20, rssi=1):
@@ -29,38 +29,25 @@ class Frame:
         self.data = message
 
     def serialize(self) -> bytes:
-        frame = b''.join([
+        return b''.join([
             self.type.to_bytes(1, 'big'),
             self.source_address.to_bytes(2, 'big'),
             self.destination_address.to_bytes(2, 'big'),
             self.data
         ])
 
-        return CRC().encode(frame)
-
     @staticmethod
     def deserialize(frame: bytes):
         if cfg.rssi_enabled:
-            rssi = frame[-1]
+            rssi = - (256 - frame[-1])
             frame = frame[:-1]
         else:
             rssi = -1
 
-        if cfg.rssi_enabled:  # type: ignore
-            rssi = - (256 - message[-1])
-
-            message = message[:-1]
-        decode_frame = CRC().decode(frame)
-
-        if decode_frame is None:
-            print(f"Failed to decode frame [{frame}]")
-
-            return None
-
-        type = decode_frame[0]
-        source_address = int.from_bytes(decode_frame[1:3], 'big')
-        destination_address = int.from_bytes(decode_frame[3:5], 'big')
-        message = decode_frame[5:]
+        type = frame[0]
+        source_address = int.from_bytes(frame[1:3], 'big')
+        destination_address = int.from_bytes(frame[3:5], 'big')
+        message = frame[5:]
 
         return Frame(type, message, source_address, destination_address, rssi=rssi)
 
@@ -71,10 +58,12 @@ class INetworkController:
     task: asyncio.Task
     callbacks: dict[int, list]
     queue: list
+    crc: CRC
 
     def __init__(self):
         self.callbacks = {}
         self.queue = []
+        self.crc = CRC()
 
     def start(self):
         """ start the network controller """
@@ -84,6 +73,7 @@ class INetworkController:
         self.thread = _thread.start_new_thread(self._thread, ())
 
     killed = False
+
     def _thread(self):
         while True and not self.killed:
             if len(self.queue) > 0:
@@ -104,11 +94,10 @@ class INetworkController:
         """ stop the network controller """
         self.task.cancel()
         self.killed = True
-        
 
     def send_message(self, type: int, message: bytes, addr=0xffff):
         """ send a message to the specified address """
-        self.queue.append((type, message, addr))
+        self.queue.append((type, self.crc.encode(message), addr))
 
     def register_callback(self, addr: int, callback):
         """ register a callback for the specified address """
@@ -124,7 +113,14 @@ class INetworkController:
                 self.register_callback(frame_type, callback)
 
     def on_message(self, message: bytes):
-        """ called when a message is recieved """
+        message = self.crc.decode(message)
+
+        if message is None:
+            print(f"Failed to decode message [{message}]")
+
+            return None
+
+        """ called when a message is received """
         frame = Frame.deserialize(message)
 
         # call all the callbacks
