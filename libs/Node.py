@@ -1,15 +1,18 @@
+from libs.controllers.timekeeping.RTCTimekeepingController import RTCTimekeepingController
 from libs.controllers.config import ConfigController, NodeConfigData
+from libs.controllers.network.E220NetworkController import Frame
+from libs.controllers.measurement.Measurement import Measurement
 from libs.controllers.database.BinaryKV import BinarKVDatabase
 from libs.controllers.measurement import MeasurementController
-from libs.controllers.measurement.Measurement import Measurement
-from libs.controllers.network import INetworkController
-from libs.controllers.network.E220NetworkController import Frame
 from libs.controllers.replication import ReplicationController
-from libs.controllers.timekeeping.RTCTimekeepingController import RTCTimekeepingController
-from libs.sensors import ISensor
-from libs.controllers.storage import IStorageController
+from libs.controllers.database.CsvDatabase import CsvDatabase
 from libs.controllers.neighbours import NeighboursController
+from libs.controllers.network import INetworkController
+from libs.controllers.storage import IStorageController
+from libs.external.ChannelLogger import logger
+from libs.sensors import ISensor
 
+import time
 
 class Node():
 
@@ -20,94 +23,145 @@ class Node():
                  node_config: NodeConfigData) -> None:
 
         self.sensors = sensors
+
+        ## SETUP CONTROLLERS ##
+        # setup and mount storage
         self.storage_controller = storage_controller
-        self.network_controller = network_controller
-        self.neighbours_controller = NeighboursController(
-            node_config, network_controller)
-        
-        self.timekeeping_controller = RTCTimekeepingController()
+        self.storage_controller.mount('/sd')
 
-        self.init_storage()
-
-        self.measurement_controller = MeasurementController(
-            sensors=self.sensors,
-            timekeeping_controller=self.timekeeping_controller,
-            actions=[
-                lambda m: print(type(m), str(m)),
-                lambda measurement: self.store_measurement(measurement),
-                lambda measurement: network_controller.send_message(
-                    1, measurement.encode())
-            ])
-
+        # setup config controller
         self.config_controller = ConfigController(
             config=node_config,
             send_message=network_controller.send_message
         )
 
-        self.replication_controller = ReplicationController(
-            self.config_controller)
+        # setup network and routing related controllers
+        self.network_controller = network_controller
+        self.neighbours_controller = NeighboursController(
+            config_controller=self.config_controller, 
+            network=network_controller
+        )
+        
+
+        # setup measurement related controllers
+        self.timekeeping_controller = RTCTimekeepingController()
+        self.measurement_controller = MeasurementController(
+            sensors=self.sensors,
+            timekeeping_controller=self.timekeeping_controller,
+            actions=[
+                lambda m: logger((type(m), str(m)), channel='measurement'),  # log the measurement
+                lambda measurement: self.store_measurement(measurement),     # store the measurement
+                lambda measurement: network_controller.send_message(        # broadcast the measurement
+                    Frame.FRAME_TYPES['measurement'], 
+                    measurement.encode()
+                )
+            ])
+
+
+        self.replication_controller = ReplicationController(self.config_controller)
 
         filepath = '/sd/data.db'
-        self.database_controller = BinarKVDatabase(
+        self.database_controller = CsvDatabase(
             filepath, self.storage_controller)
 
-        # Register message callbacks
-        self.network_controller.register_callback(-1, lambda frame: print(
-            f'received a message of type {frame.type} from node {frame.source_address} for node {frame.destination_address}: {frame.data} (rssi: {frame.rssi})'))  # -1 is a wildcard type
+        # register routing callbacks
+        self.network_controller.register_callbacks({
+            -1: [self.neighbours_controller.handle_alive],
+            Frame.FRAME_TYPES['node_joining']: [self.neighbours_controller.handle_join],
+            Frame.FRAME_TYPES['node_leaving']: [self.neighbours_controller.handle_leave],
+        })
 
-        self.network_controller.register_callback(Frame.FRAME_TYPES['measurment'],
-                                                  self.store_measurement_frame)  # decide if we want to store the measurement
-        self.network_controller.register_callback(Frame.FRAME_TYPES['discovery'],
-                                                  self.config_controller.handle_message)  # new nodes will broadcast this type of message
-        self.network_controller.register_callback(Frame.FRAME_TYPES['config'],
-                                                  self.config_controller.handle_message)  # handle config changes
-        self.network_controller.register_callback(Frame.FRAME_TYPES['replication'],
-                                                  self.replication_controller.handle_bid)  # handle replication changes
-        self.network_controller.register_callback(Frame.FRAME_TYPES['node_joining'],
-                                                  self.neighbours_controller.handle_join)
-        self.network_controller.register_callback(Frame.FRAME_TYPES['node_leaving'],
-                                                  self.neighbours_controller.handle_leave)
-        self.network_controller.register_callback(-1,
-                                                  self.neighbours_controller.handle_alive)
-        
-        self.network_controller.register_callback(Frame.FRAME_TYPES['sync_time'],
-                                                    lambda frame: self.timekeeping_controller.sync_time(int.from_bytes(frame.data, 'big')))
+        # register measurement callbacks
+        self.network_controller.register_callbacks({
+            Frame.FRAME_TYPES['config']: [self.config_controller.handle_message],
+            Frame.FRAME_TYPES['measurement']: [self.store_measurement_frame],
+            Frame.FRAME_TYPES['replication']: [self.replication_controller.handle_bid],
+            Frame.FRAME_TYPES['discovery']: [lambda _: self.config_controller.broadcast_config()],            
+        })
 
-        print(self.network_controller.callbacks)
+        # extra callbacks
+        self.network_controller.register_callbacks({
+            -1: [self.print_message_received],
+            Frame.FRAME_TYPES['sync_time']: [
+                lambda frame: self.timekeeping_controller.sync_time(
+                    int.from_bytes(frame.data, 'big')
+                )
+            ],
+        })
 
-        print('node has been initialized, starting controllers')
+        logger('Node has been initialized. starting', channel='info')    
 
-        # make and send measuremnt every 1 second
-        self.measurement_controller.start(
-            node_config.measurement_interval * 1000)
+        self.measurement_controller.start(node_config.measurement_interval)
         self.neighbours_controller.start()
         self.network_controller.start()
-        print('node has been initialized, controllers started')
+
+        logger('Node has been started. Broadcasting config', channel='info')
 
         self.neighbours_controller.broadcast_join()
-        print('Sended a broadcast of config')
 
-    def init_storage(self):
-        self.storage_controller.mount('/sd')
+        time.sleep(1)
+
+        ## LOG THE NODES INFO ##
+        all_callbacks = []
+        for i in self.network_controller.callbacks.values():
+            all_callbacks.extend(i)
+            
+        info = {
+            'address': self.network_controller.address,
+            'requested_replications': self.config_controller.config.replication_count,
+            'callbacks': {
+                key: len(val) for key, val in self.network_controller.callbacks.items()
+            }
+        }
+
+        logger('Node has been started and joined network.', channel='info')
+        for key, val in info.items():
+            logger(f'\t {key}: {val}', channel='info')
+
+
+
+    def print_message_received(self, frame: Frame):
+        logger(
+            f'received a message of type {frame.type} from node {frame.source_address} for node {frame.destination_address}: {frame.data} (rssi: {frame.rssi})', 
+            channel='recieved_message'
+        )
 
     def store_measurement_frame(self, frame: Frame):
+        # check if in ledger
+        if frame.source_address not in self.replication_controller.config_controller.ledger:
+            # send a discovery message
+            self.network_controller.send_message(
+                Frame.FRAME_TYPES['discovery'], 
+                b'',
+                frame.source_address
+            )
+            return
+
         # check if we should store
-        if self.replication_controller.should_replicate(frame.source_address):
+        if self.replication_controller.are_replicating(frame.source_address):
+            print('store measurement', frame.source_address)
             measurement = Measurement.decode(frame.data)
-            return self.store_measurement(measurement)
+            return self.store_measurement(measurement, frame.source_address)
 
         # check if it needs new replications
-        if self.replication_controller.are_replicating(frame.source_address):
-            # check if we have enough replications
-            if len(self.replication_controller.config_controller.ledger[frame.source_address].replications) < \
-                    self.replication_controller.config_controller.ledger[frame.source_address].replication_count:
-                # send a bid
-                self.network_controller.send_message(
-                    3, frame.ttl.to_bytes(4, 'big'), frame.source_address)
-                return
+        if self.replication_controller.should_replicate(frame.source_address):
+            self.network_controller.send_message(
+                3, frame.ttl.to_bytes(4, 'big'), frame.source_address)
+            return
 
     def store_measurement(self, measurement: Measurement, address=None):
-        d = measurement.data
-        d['address'] = address  # type: ignore
+        # if no address is passed we will use our own
+        if address is None:
+            address = self.network_controller.address
 
-        self.database_controller.store(measurement.timestamp, d)
+        measurement.data['address'] = address
+        self.database_controller.store(measurement.timestamp, measurement.data)
+
+    def __del__(self):
+        # stop all async tasks and threads
+        self.network_controller.stop()
+        self.measurement_controller.stop()
+
+        # close the database controller
+        del self.database_controller
+        

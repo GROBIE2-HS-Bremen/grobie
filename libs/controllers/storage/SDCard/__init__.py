@@ -1,8 +1,10 @@
-from machine import SPI, Pin
 from libs.controllers.storage.SDCard.SDCard import SDCard
 from libs.controllers.storage import IStorageController
+from libs.external.ChannelLogger import logger
 
 from uos import mount, umount, VfsFat, mkdir
+from machine import SPI, Pin
+
 
 
 class SDCardStorageController(IStorageController):
@@ -24,7 +26,7 @@ class SDCardStorageController(IStorageController):
             mount(vfs, mount_point)
         except OSError as e:
             if e.args[0] == 1:
-                print('mount failed')
+                logger('mount failed', channel='error')
 
     def umount(self):
         # FIXME: check if already unmounted

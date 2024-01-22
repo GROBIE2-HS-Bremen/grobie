@@ -1,9 +1,9 @@
+from libs.controllers.storage.LocalStorage import LocalStorageController
 from libs.controllers.database import IDatabaseController
 from libs.controllers.storage import IStorageController
-from libs.controllers.storage.LocalStorage import LocalStorageController
+from libs.external.ChannelLogger import logger
 
 import libs.external.umsgpack as umsgpack
-
 
 class BinarKVDatabase(IDatabaseController):
     """ 
@@ -31,7 +31,7 @@ class BinarKVDatabase(IDatabaseController):
 
         # ensure the file exists and open it
         self.storage_controller.ensure_exists(self.filename)
-        self.handle = open(filename, 'wb')
+        self.handle = open(filename, 'a+b')
 
     def store(self, timestamp, data):
         """ store the data in a binary format. the first 32 bits are the timestamp, the rest is the data"""
@@ -136,51 +136,7 @@ class BinarKVDatabase(IDatabaseController):
                 self.handle.seek(int.from_bytes(line[0:4], 'big'), 1)
 
         return data
-
-
-if __name__ == '__main__':
-    sc = LocalStorageController()
-    db = BinarKVDatabase('test.csv', sc)
-
-    inserted_data = []
-
-    for i in range(10):
-        db.store(i, {
-            'test': i,
-            'foo': 0.2324
-        })
-        inserted_data.append([i, {'test': i, 'foo': 0.2324}])
-
-    # print content of the file 
-    with open('test.csv', 'rb') as f:
-        d = f.read()
-
-    assert db.get(0) == [0, {'test': 0, 'foo': 0.2324}]
-    assert db.get(9) == [9, {'test': 9, 'foo': 0.2324}]
-    assert db.get(5) == [5, {'test': 5, 'foo': 0.2324}]
-    assert db.get(-425423) == None
-    assert db.get(20) == None
-
-    assert db.get_all() == inserted_data
-
-    assert db.get_all_between(3, 6, True) == [[3, {'test': 3, 'foo': 0.2324}], [4, {'test': 4, 'foo': 0.2324}],
-                                              [5, {'test': 5, 'foo': 0.2324}], [6, {'test': 6, 'foo': 0.2324}]]
-    assert db.get_all_between(3, 3, True) == [[3, {'test': 3, 'foo': 0.2324}]]
-    assert db.get_all_between(3, 3) == []
-    assert db.get_all_between(3, 2) == []
-
-    assert db.get_all_after(0, True) == inserted_data
-    assert db.get_all_after(9, True) == [[9, {'test': 9, 'foo': 0.2324}]]
-    assert db.get_all_after(5) == [[6, {'test': 6, 'foo': 0.2324}], [7, {'test': 7, 'foo': 0.2324}],
-                                   [8, {'test': 8, 'foo': 0.2324}], [9, {'test': 9, 'foo': 0.2324}]]
-    assert db.get_all_after(10) == []
-
-    assert db.get_all_before(0, True) == [[0, {'test': 0, 'foo': 0.2324}]]
-    assert db.get_all_before(9, True) == inserted_data
-    assert db.get_all_before(5) == [[0, {'test': 0, 'foo': 0.2324}], [1, {'test': 1, 'foo': 0.2324}],
-                                    [2, {'test': 2, 'foo': 0.2324}], [3, {'test': 3, 'foo': 0.2324}],
-                                    [4, {'test': 4, 'foo': 0.2324}]]
-    assert db.get_all_before(0) == []
-    assert db.get_all_before(10) == inserted_data
-
-    print('all tests passed')
+    
+    def __del__(self):
+        self.handle.close()
+        

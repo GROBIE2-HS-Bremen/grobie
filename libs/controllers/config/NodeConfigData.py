@@ -1,8 +1,6 @@
+from libs.helpers.dict import DiffChange, diff_dict
 import libs.external.umsgpack as umsgpack
-from libs.helpers.dict import DiffChange, apply_diff, diff_dict
 
-
-# from libs.helpers.dict import apply_diff, diff_dict
 
 class NodeConfigData:
     """ 
@@ -12,7 +10,7 @@ class NodeConfigData:
     Attributes
     ----------
     addr : int
-        the address of the node. value is in range [0, 255]
+        the address of the node. value is in range [0, 0xFFFF]
     measurement_interval : int
         the interval in which the node should measure from the sensors. this 
     replications : dict[int, int]

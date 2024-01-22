@@ -1,6 +1,7 @@
-import asyncio
-from machine import UART
 from libs.controllers.network import INetworkController
+from machine import UART
+
+import asyncio
 
 
 class UARTNetworkController(INetworkController):
@@ -16,5 +17,5 @@ class UARTNetworkController(INetworkController):
                 self.on_message(self.uart.read())
             await asyncio.sleep(0.1)
 
-    def _send_message(self, type: int, message: bytes, addr=b'\xff\xff'):
+    def _send_message(self, type: int, message: bytes, addr):
         self.uart.write(message)
