@@ -36,6 +36,7 @@ class RoutingController:
             (0x00).to_bytes(1, 'big'),
         ]), address)
         self.routing_table[address] = -1
+        self.request_list.append(address)
         return -1
 
     def handle_routing_request(self, frame: Frame):
@@ -72,14 +73,14 @@ class RoutingController:
             frame.data,
             self.network.address.to_bytes(2, 'big'),
             frame.rssi.to_bytes(1, 'big'),
-        ]))
+        ]), frame.destination_address)
 
     def handle_routing_response(self, frame: Frame):
         route = [frame.data[i:i+2] for i in range(0, len(frame.data), 2)]
         self.routing_table[int.from_bytes(
             route[-1], 'big')] = frame.source_address
 
-        if int.from_bytes(route[1], 'big') == self.network.address:
+        if int.from_bytes(route[0], 'big') == self.network.address:
             logger(f"Response route: {route}", channel='routing')
             return
 

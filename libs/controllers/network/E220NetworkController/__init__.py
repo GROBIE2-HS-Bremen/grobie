@@ -53,7 +53,7 @@ class E220NetworkController(INetworkController):
 
         # If the request isnt a broadcast or a routing request, check what the
         # destionation should be
-        elif address != 0xffff:
+        elif address != 0xffff and type != Frame.FRAME_TYPES['routing_response']:
             dest = self.routing_controller.get_route(address)
 
         # If destination is unkown, put it back on the queue
