@@ -1,8 +1,6 @@
 from libs.external.reedsolo import *
 
 import array
-import config as cfg
-
 
 class CRC:
     def __init__(self):
