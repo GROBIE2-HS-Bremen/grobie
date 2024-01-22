@@ -1,5 +1,3 @@
-import config as cfg
-
 import _thread
 import asyncio
 import time
@@ -38,16 +36,11 @@ class Frame:
         ])
 
     @staticmethod
-    def deserialize(frame: bytes):
-        rssi = 1
+    def deserialize(frame: bytes, rssi: int = 1):
         type = frame[0]
         source_address = int.from_bytes(frame[1:3], 'big')
         destination_address = int.from_bytes(frame[3:5], 'big')
         message = frame[5:]
-
-        if cfg.rssi_enabled:
-            rssi = -(256 - message[-1])
-            message = message[:-1]
 
         return Frame(type, message, source_address, destination_address, rssi=rssi)
 
@@ -86,6 +79,9 @@ class INetworkController:
         """ send a message to the specified address """
         raise NotImplementedError()
 
+    def _decode_message(self, message: bytes):
+        return Frame.deserialize(message)
+
     async def _start(self):
         """ the main loop of the network controller """
         raise NotImplementedError()
@@ -97,7 +93,7 @@ class INetworkController:
 
     def send_message(self, type: int, message: bytes, addr=0xffff):
         """ send a message to the specified address """
-        self.queue.append((type, self.crc.encode(message), addr))
+        self.queue.append((type, message, addr))
 
     def register_callback(self, addr: int, callback):
         """ register a callback for the specified address """
@@ -113,15 +109,13 @@ class INetworkController:
                 self.register_callback(frame_type, callback)
 
     def on_message(self, message: bytes):
-        message = self.crc.decode(message)
+        """ called when a message is received """
+        frame = self._decode_message(message)
 
-        if message is None:
-            print(f"Failed to decode message [{message}]")
+        if frame is None:
+            logger(f"Failed to decode message [{message}]", channel='error')
 
             return None
-
-        """ called when a message is received """
-        frame = Frame.deserialize(message)
 
         # call all the callbacks
         for callback in self.callbacks.get(-1, []):

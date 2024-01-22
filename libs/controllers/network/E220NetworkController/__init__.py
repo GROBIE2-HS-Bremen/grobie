@@ -3,7 +3,7 @@ from libs.controllers.network import Frame, INetworkController
 from libs.external.ChannelLogger import logger
 
 import asyncio
-
+import config as cfg
 
 
 class E220NetworkController(INetworkController):
@@ -33,7 +33,7 @@ class E220NetworkController(INetworkController):
         self.e220.set_mode(MODE_NORMAL)
 
     async def _start(self):
-        # start seperate thread
+        # start separate thread
         while True:
             d = self.e220.read()
             if d:
@@ -44,7 +44,21 @@ class E220NetworkController(INetworkController):
         frame = Frame(type, message, self.address, addr)
 
         logger(f'sending frame {frame.__dict__}', channel='send_message')
-        self.e220.send(addr.to_bytes(2, 'big'), frame.serialize())
+        self.e220.send(addr.to_bytes(2, 'big'), self.crc.encode(frame.serialize()))
+
+    def _decode_message(self, message: bytes):
+        rssi = 1
+
+        if cfg.rssi_enabled:
+            rssi = - (256 - message[-1])
+            message = message[:-1]
+
+        decode = self.crc.decode(message)
+
+        if decode is None:
+            return None
+
+        return Frame.deserialize(decode, rssi)
 
     @property
     def address(self) -> int:
