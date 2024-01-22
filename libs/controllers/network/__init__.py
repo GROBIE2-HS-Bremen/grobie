@@ -41,7 +41,6 @@ class Frame:
             self.frame_num.to_bytes(1,'big'),
             self.ses_num.to_bytes(2,'big'),
             self.data,
-            #self.crc.to_bytes(2, 'big'),
             ])
         
         
@@ -134,28 +133,17 @@ class INetworkController:
     def handle_packet(self,frame):
         raise NotImplementedError()
     
+
     def on_message(self, message: bytes):
         """ called when a message is recieved """
         
         frame = Frame.deserialize(message)
         frame = self.handle_packet(frame)
         
-        #print(frame)
         # No frame to give back to callbacks
         if frame is None: 
             return
-     
         
-        
-        for cb in self.callbacks.get(-1, []):
-            #print(cb)
-            cb(frame)
-        
-        for cb in self.callbacks.get(frame.type, []):
-            #print(cb)
-            cb(frame)
-        
-
         # call all the callbacks
         for callback in self.callbacks.get(-1, []):
             try: 

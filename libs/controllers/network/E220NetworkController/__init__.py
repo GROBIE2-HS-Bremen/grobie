@@ -20,7 +20,6 @@ class E220NetworkController(INetworkController):
         self.frame_order = {}
         
         self.network_handler = NetworkHandler(e220, self)
-        self.register_callback(Frame.FRAME_TYPES['acknowledgement'],self.network_handler.cb_incoming_ack)
 
 
         self.e220.set_mode(MODE_CONFIG)
@@ -43,92 +42,99 @@ class E220NetworkController(INetworkController):
 
     async def _start(self):
         # start seperate thread
+      
         while True:
             d = self.e220.read()
             if d:
                 self.on_message(d)
             await asyncio.sleep(0.1)
 
+
     def handle_packet(self,frame: Frame):
+        #logger(f"Voor {self.network_handler.rcv_ack}")
+        if frame.type == Frame.FRAME_TYPES['acknowledgement']:
+            self.network_handler.set_rcv_ack()
+            #logger(f"Na {self.network_handler.rcv_ack}")
+            return 
+            
+        elif frame.type == Frame.FRAME_TYPES['measurement']:
+            logger('[+] Received measurement')
+            
+            #self.network_handler.transmit_ack(frame)
+            #return frame
+            
+        else:
+            logger(f'[+] Received other packet type:{frame.type}')
+            #return frame
+        
+        
         
         # Frame_order and sessions two dicts because of easier management.
-   
-        
-        if frame.type == Frame.FRAME_TYPES['acknowledgement']:
-            logger('Received ACK')
-            return frame
-        
-            
 
         # If multiple frames expected make session.
-        if frame.frame_num != 0:
+        # if frame.frame_num != 0:
 
-            # Make session if it does not exists
-            if not self.sessions.get(frame.ses_num):
-                logger('[+] Adding session')
+        #     # Make session if it does not exists
+        #     if not self.sessions.get(frame.ses_num):
+        #         logger('[+] Adding session')
 
-                self.sessions[frame.ses_num] = {
-                    'destination_address':frame.destination_address,
-                    'ttl':frame.ttl,
-                    'source_address':frame.source_address,
-                    'ses_num':frame.ses_num,
-                    'frame_num':frame.frame_num,
-                    'type':frame.type,
-                    'data':b''
-                }
+        #         self.sessions[frame.ses_num] = {
+        #             'destination_address':frame.destination_address,
+        #             'ttl':frame.ttl,
+        #             'source_address':frame.source_address,
+        #             'ses_num':frame.ses_num,
+        #             'frame_num':frame.frame_num,
+        #             'type':frame.type,
+        #             'data':b''
+        #         }
             
-            # Initialize the frame_order list for incoming frames
-            if frame.ses_num not in self.frame_order:
-                self.frame_order[frame.ses_num] = [None]*(frame.frame_num)
+        #     # Initialize the frame_order list for incoming frames
+        #     if frame.ses_num not in self.frame_order:
+        #         self.frame_order[frame.ses_num] = [None]*(frame.frame_num)
 
-            try:
-                self.frame_order[frame.ses_num][frame.frame_num-1] = frame.data
+        #     try:
+        #         self.frame_order[frame.ses_num][frame.frame_num-1] = frame.data
 
-            except IndexError:
-                logger("[*] Out of order frame number. However session is recovered.")
-                self.frame_order[frame.ses_num].append(frame.data)
+        #     except IndexError:
+        #         logger("[*] Out of order frame number. However session is recovered.")
+        #         self.frame_order[frame.ses_num].append(frame.data)
 
-            # Ack not send for broadcast.
-            self.network_handler.transmit_ack(frame)
+        #     # Ack not send for broadcast.
+        #     self.network_handler.transmit_ack(frame)
 
 
-        # If session exists and CLOSING packet we assemble everything and return it.
-        elif frame.ses_num in self.sessions and frame.frame_num == 0:
+        # # If session exists and CLOSING packet we assemble everything and return it.
+        # elif frame.ses_num in self.sessions and frame.frame_num == 0:
+        #     logger("[+] Received closing packet.")
+        #     if None in self.frame_order[frame.ses_num]:
+        #         logger(f"[-] Message not complete! Deleting session.")
+        #         # TODO Think about deleting session if packet is incomplete.
+        #         del self.sessions[frame.ses_num]
+        #         del self.frame_order[frame.ses_num]
+        #         return
             
-            if None in self.frame_order[frame.ses_num]:
-                logger(f"[-] Message not complete!")
-                # TODO Think about deleting session if packet is incomplete.
-                return
-            
-            data = b''.join(self.frame_order[frame.ses_num][::-1])
-            self.sessions[frame.ses_num]['data'] = data
+        #     data = b''.join(self.frame_order[frame.ses_num][::-1])
+        #     self.sessions[frame.ses_num]['data'] = data
 
           
-            self.network_handler.transmit_ack(frame)
+        #     self.network_handler.transmit_ack(frame)
 
-            packet = self.sessions[frame.ses_num]
-            logger(f'[+] Complete packet is: {packet}')
+        #     packet = self.sessions[frame.ses_num]
+        #     logger(f'[+] Complete packet is: {packet}')
             
-            del self.sessions[frame.ses_num]
-            del self.frame_order[frame.ses_num]
+        #     del self.sessions[frame.ses_num]
+        #     del self.frame_order[frame.ses_num]
             
-            logger(f"[X] Session {frame.ses_num} deleted.")
+        #     logger(f"[X] Session {frame.ses_num} deleted.")
             
-            return Frame(
-                type=packet['type'],
-                source_address=packet['source_address'],
-                destination_address=packet['destination_address'],
-                ttl=packet['ttl'],
-                message=packet['data'],
-            )
+        #     return Frame(
+        #         type=packet['type'],
+        #         source_address=packet['source_address'],
+        #         destination_address=packet['destination_address'],
+        #         ttl=packet['ttl'],
+        #         message=packet['data'],
+        #     )
             
-
-        
-        else:
-            logger('[+] Single packet received')
-            self.network_handler.transmit_ack(frame)
-            return frame
-        
 
 
     def send_message(self, type: int, message: bytes, addr=255,ttl=20,datasize=188):
@@ -136,51 +142,58 @@ class E220NetworkController(INetworkController):
         Ebyte module sends data in one continous message if data is 199 bytes or lower.
         """
         
-        frame_num = 0
-        length_msg = len(message)
-        data_splits = []
+        
+        logger(f"[*] Sending package..")
+        frame = Frame(type,message,self.address,addr,ttl,frame_num=0,ses_num=0)
+        
+        self.network_handler.transmit_packet(frame)
+        
+
+        # frame_num = 0
+        # length_msg = len(message)
+        # data_splits = []
         
         
-        if length_msg > datasize:
-            # Random sessionnumber
-            # 2 bytes
-            ses_num = random.randint(1,60000)
+        # if length_msg > datasize:
+        #     # Random sessionnumber
+        #     # 2 bytes
+        #     ses_num = random.randint(1,60000)
             
             
-            # Amount of frames to send
-            frame_num = length_msg // datasize + 1
+        #     # Amount of frames to send
+        #     frame_num = length_msg // datasize + 1
             
-            start = 0
-            end = datasize
+        #     start = 0
+        #     end = datasize
             
 
-            while True:
-                if end > length_msg:
-                    end = length_msg
+        #     while True:
+        #         if end > length_msg:
+        #             end = length_msg
 
-                data_splits.append(message[start:end])
-                start += datasize
-                end += datasize
+        #         data_splits.append(message[start:end])
+        #         start += datasize
+        #         end += datasize
                 
-                if start > length_msg:
-                    break
-        else:
-            frame = Frame(type,message,self.address,addr,ttl,ses_num=0,frame_num=0)
-            self.network_handler.transmit_packet(frame)
-            return
+        #         if start > length_msg:
+        #             break
+        # else:
+        #     frame = Frame(type,message,self.address,addr,ttl,ses_num=0,frame_num=0)
+        #     self.network_handler.transmit_packet(frame)
+        #     return
 
             
-        for msg in data_splits:
-            logger(f"Sending package - {msg} with session number {ses_num} and frame number {frame_num}")
-            frame = Frame(type,msg,self.address,addr,ttl,frame_num,ses_num)
-            self.network_handler.transmit_packet(frame)
-            frame_num -= 1
+        # for msg in data_splits:
+        #     logger(f"Sending package - {msg} with session number {ses_num} and frame number {frame_num}")
+        #     frame = Frame(type,msg,self.address,addr,ttl,frame_num,ses_num)
+        #     self.network_handler.transmit_packet(frame)
+        #     frame_num -= 1
 
         # Send closing frame.
-        frame_num = 0
-        logger(f"Sending CLOSING packet with session number {ses_num} and frame number {frame_num}!")
-        frame = Frame(type,b'CLOSING',self.address,addr,ttl,frame_num,ses_num)
-        self.network_handler.transmit_packet(frame)
+        # frame_num = 0
+        # logger(f"Sending CLOSING packet with session number {ses_num} and frame number {frame_num}!")
+        # frame = Frame(type,b'CLOSING',self.address,addr,ttl,frame_num,ses_num)
+        # self.network_handler.transmit_packet(frame)
 
     def _send_message(self, type: int, message: bytes, addr):
         frame = Frame(type, message, self.address, addr)

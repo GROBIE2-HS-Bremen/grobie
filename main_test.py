@@ -45,6 +45,7 @@ logger.set_channel('recieved_message', True)
 logger.set_channel('send_message', True)
 logger.set_channel('measurement', False)
 logger.set_channel('routing', False)
+#logger.set_channel('routing', False)
 
 
 ##### START NODE #####
@@ -58,12 +59,13 @@ async def send_frames():
     Test the splitting of messages. And receiving ACK'S.
     This message will get split in 5 packets so we need to wait on 5 ACK's. 
     """
-    data = b'1TEST'+200*b'TEST'+b'TEST2'
+    import libs.external.umsgpack as umsgpack
+
+    data = umsgpack.dumps({'node':3,'timestamp':1000})
 
     
-    # We need to get 5 ACKS because sending 5 messages
     while True:
-        node.network_controller.send_message(1,data,4)
+        node.network_controller.send_message(1,data,3)
         await asyncio.sleep(5)
         
 
@@ -73,26 +75,26 @@ async def receive_frames():
     The goal is to keep track of the session and assemble the data correctly and ack messages.
     """
 
-    frames = [b'1test',b'2test']
-    amount_frames = 0
+    # frames = [b'1test',b'2test']
+    # amount_frames = 0
 
 
-    frame = Frame(type=Frame.FRAME_TYPES['measurment'], message=frames[0], source_address=5,
-                destination_address=0xFFFF, ttl=20, frame_num=2, ses_num=6553
-                ).serialize() + b'\x00'
-    node.network_controller.on_message(frame)
+    # frame = Frame(type=Frame.FRAME_TYPES['measurment'], message=frames[0], source_address=5,
+    #             destination_address=0xFFFF, ttl=20, frame_num=2, ses_num=6553
+    #             ).serialize() + b'\x00'
+    # node.network_controller.on_message(frame)
 
     
-    frame = Frame(type=Frame.FRAME_TYPES['measurment'], message=frames[1], source_address=5,
-                destination_address=0xFFFF, ttl=20, frame_num=1, ses_num=6553
-                ).serialize() + b'\x00'
-    node.network_controller.on_message(frame)
+    # frame = Frame(type=Frame.FRAME_TYPES['measurment'], message=frames[1], source_address=5,
+    #             destination_address=0xFFFF, ttl=20, frame_num=1, ses_num=6553
+    #             ).serialize() + b'\x00'
+    # node.network_controller.on_message(frame)
 
-    frame = Frame(type=Frame.FRAME_TYPES['measurment'], message=b'CLOSING', source_address=5,
-                        destination_address=0xFFFF, ttl=20,frame_num=0,ses_num=6553
-                        ).serialize()+b'\x00'
+    # frame = Frame(type=Frame.FRAME_TYPES['measurment'], message=b'CLOSING', source_address=5,
+    #                     destination_address=0xFFFF, ttl=20,frame_num=0,ses_num=6553
+    #                     ).serialize()+b'\x00'
     
-    node.network_controller.on_message(frame)
+    # node.network_controller.on_message(frame)
     
 
 try: 

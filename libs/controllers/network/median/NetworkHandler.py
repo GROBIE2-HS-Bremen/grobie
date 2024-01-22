@@ -20,25 +20,23 @@ class NetworkHandler():
         self.nc = network_controller
         self.max_tries = max_tries
 
+        self.rcv_ack_event = asyncio.Event()
+        
+
         self.rcv_ack = False
 
     
-    def cb_incoming_ack(self,message):
-        """
-        Callback for incoming ACK to extend into receive buffer
-        """
-
-        if message.type == Frame.FRAME_TYPES['acknowledgement']:
-            self.rcv_ack = True
-           
+  
         
-    def wait_for_ack(self,message,addr,ctr=1):
+    async def set_rcv_ack(self):
+        self.rcv_ack_event.set()
+        
+    async def wait_for_ack(self,message,addr,ctr=1):
         """
         Check buffer to see if ACK has been received.
         """
-        if addr == 0xFFFF:
-            return
-        
+     
+        logger(123)
         rt = 1
         
         if ctr > self.max_tries:
@@ -54,17 +52,25 @@ class NetworkHandler():
         
         while time.time() < last_time:
             # If we have received the ack in the buffer
-            if self.rcv_ack:
-                logger("Received ACK")
-                self.rcv_ack = False
+            try:
+                logger("Waiting...")
+                await asyncio.wait_for(self.rcv_ack_event.wait(), last_time)
                 return True
-            else:
-                time.sleep(0.1)
+            
+            except asyncio.TimeoutError:
+                logger(f"Not received ack in time, trying again {ctr}/{self.max_tries} with timeout of {rt} seconds.")
+                self.e220.send(addr,message)
+                await self.wait_for_ack(message,addr,ctr+1)
+
+            # if self.rcv_ack:
+            #     logger("Received ACK setting bit to False again..")
+            #     self.rcv_ack = False
+            #     return True
+            #else:
+            #    time.sleep(0.1)
         
         # No ack received within time because ack/data got lost -> send repeat
-        logger(f"Not received ack in time, trying again {ctr}/{self.max_tries} with timeout of {rt} seconds.")
-        self.e220.send(addr,message)
-        self.wait_for_ack(message,addr,ctr+1)
+        
     
     def transmit_packet(self,frame: Frame):
         """
@@ -78,15 +84,12 @@ class NetworkHandler():
         if frame.destination_address == 255:
             return self.e220.send(addr,message)
 
-
         self.e220.send(addr,message)
         received = self.wait_for_ack(message,addr)
 
-        if received == True:
-            logger(f"[+] ACK received.")
-        
-        elif received == False:
-            logger(f"[-] ACK not received.")
+       
+        if received == False:
+            logger(f"[-] ACK not received")
       
 
     def transmit_ack(self,frame):
