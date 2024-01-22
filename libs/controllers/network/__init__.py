@@ -8,14 +8,16 @@ from libs.controllers.network.error.CRC import CRC
 
 class Frame:
     FRAME_TYPES = {
-        'discovery':    0x00,
-        'measurement':  0x01,
-        'config':       0x02,
-        'replication':  0x03,
-        'node_joining': 0x06,
-        'node_leaving': 0x07,
-        'node_alive':   0x08,
-        'sync_time':    0x0f,
+        'discovery':        0x00,
+        'measurement':      0x01,
+        'config':           0x02,
+        'replication':      0x03,
+        'node_joining':     0x06,
+        'node_leaving':     0x07,
+        'node_alive':       0x08,
+        'routing_request':  0x0d,
+        'routing_response': 0x0e,
+        'sync_time':        0x0f,
     }
 
     def __init__(self, type: int, message: bytes, source_address: int, destination_address: int, ttl=20, rssi=1):
@@ -116,6 +118,11 @@ class INetworkController:
             logger(f"Failed to decode message [{message}]", channel='error')
 
             return None
+
+        # Don't allow direct messaging between some nodes.
+        # TODO: Probably remove this.
+        if self.address != 0x00a2 and frame.destination_address != 0x00a2 and frame.destination_address != 0xffff:
+            return
 
         # call all the callbacks
         for callback in self.callbacks.get(-1, []):

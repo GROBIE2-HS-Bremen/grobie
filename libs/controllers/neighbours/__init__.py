@@ -2,7 +2,6 @@ from libs.controllers.config.NodeConfigData import NodeConfigData
 from libs.controllers.network import Frame, INetworkController
 from libs.controllers.config import ConfigController
 from libs.external.ChannelLogger import logger
-from libs.Node import Frame
 
 from utime import time
 

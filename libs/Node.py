@@ -1,12 +1,13 @@
 from libs.controllers.timekeeping.RTCTimekeepingController import RTCTimekeepingController
+from libs.controllers.neighbours import NeighboursController
 from libs.controllers.config import ConfigController, NodeConfigData
-from libs.controllers.network.E220NetworkController import Frame
+from libs.controllers.network import Frame
 from libs.controllers.measurement.Measurement import Measurement
 from libs.controllers.database.BinaryKV import BinarKVDatabase
 from libs.controllers.measurement import MeasurementController
 from libs.controllers.replication import ReplicationController
 from libs.controllers.database.CsvDatabase import CsvDatabase
-from libs.controllers.neighbours import NeighboursController
+from libs.controllers.network.routing import RoutingController
 from libs.controllers.network import INetworkController
 from libs.controllers.storage import IStorageController
 from libs.external.ChannelLogger import logger
@@ -38,10 +39,14 @@ class Node():
         # setup network and routing related controllers
         self.network_controller = network_controller
         self.neighbours_controller = NeighboursController(
-            config_controller=self.config_controller, 
+            config_controller=self.config_controller,
             network=network_controller
         )
-        
+        self.routing_controller = RoutingController(
+            self.neighbours_controller, network_controller)
+
+        # TODO: Fix this with a different method
+        self.network_controller.routing_controller = self.routing_controller  # type: ignore
 
         # setup measurement related controllers
         self.timekeeping_controller = RTCTimekeepingController()
