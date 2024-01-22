@@ -75,19 +75,23 @@ async def receive_frames():
     The goal is to keep track of the session and assemble the data correctly and ack messages.
     """
 
-    frames = [b'1test',b'2test',b'3test',b'4test',b'5test']
+    frames = [b'1test',b'2test']
+    amount_frames = 0
 
-    frame_nums = [4, 2, 1, 3, 5]
 
-    for i in frame_nums:
-        print(f"Sending frame number {i}")
-        frame = Frame(type=Frame.FRAME_TYPES['measurment'], message=frames[i-1], source_address=5,
-                    destination_address=3, ttl=20, frame_num=i, ses_num=6553
-                    ).serialize() + b'\x00'
-        node.network_controller.on_message(frame)
+    frame = Frame(type=Frame.FRAME_TYPES['measurment'], message=frames[0], source_address=5,
+                destination_address=0xFFFF, ttl=20, frame_num=2, ses_num=6553
+                ).serialize() + b'\x00'
+    node.network_controller.on_message(frame)
+
+    
+    frame = Frame(type=Frame.FRAME_TYPES['measurment'], message=frames[1], source_address=5,
+                destination_address=0xFFFF, ttl=20, frame_num=1, ses_num=6553
+                ).serialize() + b'\x00'
+    node.network_controller.on_message(frame)
 
     frame = Frame(type=Frame.FRAME_TYPES['measurment'], message=b'CLOSING', source_address=5,
-                        destination_address=3, ttl=20,frame_num=0,ses_num=6553
+                        destination_address=0xFFFF, ttl=20,frame_num=0,ses_num=6553
                         ).serialize()+b'\x00'
     
     node.network_controller.on_message(frame)
