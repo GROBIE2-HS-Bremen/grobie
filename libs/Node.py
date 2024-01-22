@@ -81,7 +81,13 @@ class Node():
             Frame.FRAME_TYPES['config']: [self.config_controller.handle_message],
             Frame.FRAME_TYPES['measurement']: [self.store_measurement_frame],
             Frame.FRAME_TYPES['replication']: [self.replication_controller.handle_bid],
-            Frame.FRAME_TYPES['discovery']: [lambda _: self.config_controller.broadcast_config()],            
+            Frame.FRAME_TYPES['discovery']: [lambda _: self.config_controller.broadcast_config()],
+        })
+
+        # routing callbacks
+        self.network_controller.register_callbacks({
+            Frame.FRAME_TYPES['routing_request']: [self.routing_controller.handle_routing_request],
+            Frame.FRAME_TYPES['routing_response']: [self.routing_controller.handle_routing_response],
         })
 
         # extra callbacks
