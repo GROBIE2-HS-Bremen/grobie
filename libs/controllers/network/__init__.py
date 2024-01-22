@@ -52,7 +52,7 @@ class INetworkController:
 
     task: asyncio.Task
     callbacks: dict[int, list]
-    queue: list
+    queue: list = []
     crc: CRC
 
     def __init__(self):
@@ -121,23 +121,27 @@ class INetworkController:
 
         # Don't allow direct messaging between some nodes.
         # TODO: Probably remove this.
-        if self.address != 0x00a2 and frame.destination_address != 0x00a2 and frame.destination_address != 0xffff:
+        if self.address != 0x00a2 and frame.source_address != 0x00a2:
             return
 
         # call all the callbacks
         for callback in self.callbacks.get(-1, []):
-            try: 
+            try:
                 callback(frame)
             except Exception as e:
-                callback_name = callback.__name__ if hasattr(callback, '__name__') else callback
-                logger(f'error in callback {callback_name} with message {frame}: {e}', channel='error')
+                callback_name = callback.__name__ if hasattr(
+                    callback, '__name__') else callback
+                logger(
+                    f'error in callback {callback_name} with message {frame}: {e}', channel='error')
 
         for callback in self.callbacks.get(frame.type, []):
-            try: 
+            try:
                 callback(frame)
             except Exception as e:
-                callback_name = callback.__name__ if hasattr(callback, '__name__') else callback
-                logger(f'error in callback {callback_name} with message {frame}: {e}', channel='error')
+                callback_name = callback.__name__ if hasattr(
+                    callback, '__name__') else callback
+                logger(
+                    f'error in callback {callback_name} with message {frame}: {e}', channel='error')
 
     @property
     def address(self) -> int:

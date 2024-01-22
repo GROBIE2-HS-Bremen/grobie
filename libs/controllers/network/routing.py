@@ -34,7 +34,7 @@ class RoutingController:
         self.network.send_message(Frame.FRAME_TYPES['routing_request'], b''.join([
             self.network.address.to_bytes(2, 'big'),
             (0x00).to_bytes(1, 'big'),
-        ]))
+        ]), address)
         self.routing_table[address] = -1
         return -1
 
@@ -52,11 +52,17 @@ class RoutingController:
             # origin -> between nodes -> end node
             route: list[bytes] = [frame.data[i:i+2]
                                   for i in range(0, len(frame.data), 3)]
+            route.append(self.network.address.to_bytes(2, 'big'))
+
+            # Rssi can be found on every third value, ignoring for now.
             # rssi = int.from_bytes(frame.data[i+2:i+3], 'big', signed=True)
 
             logger(f"Found a route: {route}", channel='routing')
             self.network.send_message(
-                Frame.FRAME_TYPES['routing_response'], b''.join(route))
+                Frame.FRAME_TYPES['routing_response'],
+                b''.join(route),
+                int.from_bytes(route[-2], 'big'),
+            )
 
             return
 
@@ -65,7 +71,7 @@ class RoutingController:
         self.network.send_message(Frame.FRAME_TYPES['routing_request'], b''.join([
             frame.data,
             self.network.address.to_bytes(2, 'big'),
-            frame.rssi.to_bytes(1, 'big', signed=True),
+            frame.rssi.to_bytes(1, 'big'),
         ]))
 
     def handle_routing_response(self, frame: Frame):
