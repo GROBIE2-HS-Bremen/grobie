@@ -5,6 +5,8 @@ import time
 from libs.external.ChannelLogger import logger
 from libs.controllers.network.error.CRC import CRC
 
+import hashlib
+import libs.external.umsgpack as umsgpack
 
 class Frame:
     FRAME_TYPES = {
@@ -70,12 +72,14 @@ class INetworkController:
     killed = False
 
     def _thread(self):
+        loop = asyncio.new_event_loop()
         while True and not self.killed:
             if len(self.queue) > 0:
                 type, message, addr = self.queue.pop(0)
                 self._send_message(type, message, addr)
             else:
                 time.sleep(0.001)
+        loop.close()
 
     def _send_message(self, type: int, message: bytes, addr):
         """ send a message to the specified address """
@@ -110,6 +114,7 @@ class INetworkController:
             for callback in callbacks[frame_type]:
                 self.register_callback(frame_type, callback)
 
+    acknowledgements = {}
     def on_message(self, message: bytes):
         """ called when a message is received """
         frame = self._decode_message(message)
@@ -123,6 +128,23 @@ class INetworkController:
                 f'Got data for a different node, ignoring and pushing on queue', channel='routing')
             self.send_message(frame.type, frame.data, frame.destination_address)
             return
+        
+        if frame.type == Frame.FRAME_TYPES['acknowledgement'] and frame.destination_address == self.address:
+            hash = frame.data
+            if hash in self.acknowledgements:
+                self.acknowledgements[hash].cancel()
+                print('acknowledged')
+                return
+            
+        # check if we shoudl aknowledge the message. not broadcast, not routing, not ack, 
+        if frame.destination_address != 0xffff: 
+            hash = hashlib.md5(umsgpack.dumps({
+                'source': frame.source_address,
+                'type': frame.type,
+                'destination': frame.destination_address,
+                'data': message
+            })).digest()
+            self.send_message(Frame.FRAME_TYPES['acknowledgement'], hash, frame.source_address)
 
         # Don't allow direct messaging between some nodes.
         # if self.address != 0x00a2 and frame.source_address != 0x00a2:
@@ -146,6 +168,15 @@ class INetworkController:
                     callback, '__name__') else callback
                 logger(
                     f'error in callback {callback_name} with message {frame}: {e}', channel='error')
+
+
+    def wait_for_ack(self):
+        self.ack = False
+        timeout = time.time() + 1
+        while not self.ack and time.time() < timeout:
+            time.sleep(0.001)
+
+        return self.ack
 
     @property
     def address(self) -> int:

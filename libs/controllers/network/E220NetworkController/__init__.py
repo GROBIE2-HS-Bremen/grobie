@@ -3,8 +3,13 @@ from libs.controllers.network.routing import RoutingController
 from libs.controllers.network import Frame, INetworkController
 from libs.external.ChannelLogger import logger
 
-import asyncio
+import libs.external.umsgpack as umsgpack
 import config as cfg
+
+import hashlib
+import asyncio
+
+
 
 
 class E220NetworkController(INetworkController):
@@ -42,6 +47,7 @@ class E220NetworkController(INetworkController):
                 self.on_message(d)
             await asyncio.sleep(0.1)
 
+
     def _send_message(self, type: int, message: bytes, address: int):
         frame = Frame(type, message, self.address, address)
         dest = address
@@ -64,6 +70,28 @@ class E220NetworkController(INetworkController):
         logger(f'sending frame {frame.__dict__}', channel='send_message')
         self.e220.send(dest.to_bytes(2, 'big'),
                        self.crc.encode(frame.serialize()))
+        
+        # check if it needs an aknowledgement
+        if  address != 0xffff and \
+            type != Frame.FRAME_TYPES['routing_response'] and \
+            type != Frame.FRAME_TYPES['routing_request']:
+
+            async def readd_msg():
+                print('not aknowledged. resending')
+                self.send_message(type, message, address)     
+
+            # create a hash for the message based on the address and the type 
+            # of the message
+            
+            hash = hashlib.md5(umsgpack.dumps({
+                'source': frame.source_address,
+                'type': frame.type,
+                'destination': frame.destination_address,
+                'data': message
+            })).digest()
+
+            handle = asyncio.get_event_loop().call_later(1, readd_msg) 
+            self.acknowledgements[hash] = handle
 
     def _decode_message(self, message: bytes):
         rssi = 1
