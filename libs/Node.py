@@ -15,6 +15,7 @@ from libs.sensors import ISensor
 
 import time
 
+
 class Node():
 
     def __init__(self,
@@ -57,11 +58,10 @@ class Node():
                 lambda m: logger((type(m), str(m)), channel='measurement'),  # log the measurement
                 lambda measurement: self.store_measurement(measurement),     # store the measurement
                 lambda measurement: network_controller.send_message(        # broadcast the measurement
-                    Frame.FRAME_TYPES['measurement'], 
+                    Frame.FRAME_TYPES['measurement'],
                     measurement.encode()
                 )
             ])
-
 
         self.replication_controller = ReplicationController(self.config_controller)
 
@@ -100,11 +100,12 @@ class Node():
             ],
         })
 
-        logger('Node has been initialized. starting', channel='info')    
+        logger('Node has been initialized. starting', channel='info')
 
         self.measurement_controller.start(node_config.measurement_interval)
         self.neighbours_controller.start()
         self.network_controller.start()
+        self.routing_controller.start()
 
         logger('Node has been started. Broadcasting config', channel='info')
 
@@ -116,7 +117,7 @@ class Node():
         all_callbacks = []
         for i in self.network_controller.callbacks.values():
             all_callbacks.extend(i)
-            
+
         info = {
             'address': self.network_controller.address,
             'requested_replications': self.config_controller.config.replication_count,
@@ -129,11 +130,9 @@ class Node():
         for key, val in info.items():
             logger(f'\t {key}: {val}', channel='info')
 
-
-
     def print_message_received(self, frame: Frame):
         logger(
-            f'received a message of type {frame.type} from node {frame.source_address} for node {frame.destination_address}: {frame.data} (rssi: {frame.rssi})', 
+            f'received a message of type {frame.type} from node {frame.source_address} for node {frame.destination_address}: {frame.data} (rssi: {frame.rssi})',
             channel='recieved_message'
         )
 
@@ -142,7 +141,7 @@ class Node():
         if frame.source_address not in self.replication_controller.config_controller.ledger:
             # send a discovery message
             self.network_controller.send_message(
-                Frame.FRAME_TYPES['discovery'], 
+                Frame.FRAME_TYPES['discovery'],
                 b'',
                 frame.source_address
             )
@@ -175,4 +174,3 @@ class Node():
 
         # close the database controller
         del self.database_controller
-        

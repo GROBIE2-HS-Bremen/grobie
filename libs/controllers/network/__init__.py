@@ -121,14 +121,12 @@ class INetworkController:
         if frame.type not in [Frame.FRAME_TYPES['routing_request'], Frame.FRAME_TYPES['routing_response']] and frame.destination_address != self.address and frame.destination_address != 0xffff:
             logger(
                 f'Got data for a different node, ignoring and pushing on queue', channel='routing')
-            self.send_message(frame.type, frame.data,
-                              frame.destination_address)
+            self.send_message(frame.type, frame.data, frame.destination_address)
             return
 
         # Don't allow direct messaging between some nodes.
-        # TODO: Probably remove this.
-        if self.address != 0x00a2 and frame.source_address != 0x00a2:
-            return
+        # if self.address != 0x00a2 and frame.source_address != 0x00a2:
+        #     return
 
         # call all the callbacks
         for callback in self.callbacks.get(-1, []):
