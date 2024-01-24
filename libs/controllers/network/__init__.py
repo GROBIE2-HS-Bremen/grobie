@@ -8,14 +8,16 @@ from libs.controllers.network.error.CRC import CRC
 
 class Frame:
     FRAME_TYPES = {
-        'discovery':    0x00,
-        'measurement':  0x01,
-        'config':       0x02,
-        'replication':  0x03,
-        'node_joining': 0x06,
-        'node_leaving': 0x07,
-        'node_alive':   0x08,
-        'sync_time':    0x0f,
+        'discovery':        0x00,
+        'measurement':      0x01,
+        'config':           0x02,
+        'replication':      0x03,
+        'node_joining':     0x06,
+        'node_leaving':     0x07,
+        'node_alive':       0x08,
+        'routing_request':  0x0d,
+        'routing_response': 0x0e,
+        'sync_time':        0x0f,
     }
 
     def __init__(self, type: int, message: bytes, source_address: int, destination_address: int, ttl=20, rssi=1):
@@ -50,7 +52,7 @@ class INetworkController:
 
     task: asyncio.Task
     callbacks: dict[int, list]
-    queue: list
+    queue: list = []
     crc: CRC
 
     def __init__(self):
@@ -114,23 +116,36 @@ class INetworkController:
 
         if frame is None:
             logger(f"Failed to decode message [{message}]", channel='error')
-
             return None
+
+        if frame.type not in [Frame.FRAME_TYPES['routing_request'], Frame.FRAME_TYPES['routing_response']] and frame.destination_address != self.address and frame.destination_address != 0xffff:
+            logger(
+                f'Got data for a different node, ignoring and pushing on queue', channel='routing')
+            self.send_message(frame.type, frame.data, frame.destination_address)
+            return
+
+        # Don't allow direct messaging between some nodes.
+        # if self.address != 0x00a2 and frame.source_address != 0x00a2:
+        #     return
 
         # call all the callbacks
         for callback in self.callbacks.get(-1, []):
-            try: 
+            try:
                 callback(frame)
             except Exception as e:
-                callback_name = callback.__name__ if hasattr(callback, '__name__') else callback
-                logger(f'error in callback {callback_name} with message {frame}: {e}', channel='error')
+                callback_name = callback.__name__ if hasattr(
+                    callback, '__name__') else callback
+                logger(
+                    f'error in callback {callback_name} with message {frame}: {e}', channel='error')
 
         for callback in self.callbacks.get(frame.type, []):
-            try: 
+            try:
                 callback(frame)
             except Exception as e:
-                callback_name = callback.__name__ if hasattr(callback, '__name__') else callback
-                logger(f'error in callback {callback_name} with message {frame}: {e}', channel='error')
+                callback_name = callback.__name__ if hasattr(
+                    callback, '__name__') else callback
+                logger(
+                    f'error in callback {callback_name} with message {frame}: {e}', channel='error')
 
     @property
     def address(self) -> int:

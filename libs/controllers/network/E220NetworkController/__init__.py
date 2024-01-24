@@ -1,4 +1,5 @@
 from libs.controllers.network.E220NetworkController.E220 import E220, MODE_CONFIG, MODE_NORMAL
+from libs.controllers.network.routing import RoutingController
 from libs.controllers.network import Frame, INetworkController
 from libs.external.ChannelLogger import logger
 
@@ -8,6 +9,7 @@ import config as cfg
 
 class E220NetworkController(INetworkController):
     callbacks: dict[int, list] = {}
+    routing_controller: RoutingController
 
     def __init__(self, e220: E220, set_config=False):
         super().__init__()
@@ -40,16 +42,33 @@ class E220NetworkController(INetworkController):
                 self.on_message(d)
             await asyncio.sleep(0.1)
 
-    def _send_message(self, type: int, message: bytes, addr):
-        frame = Frame(type, message, self.address, addr)
+    def _send_message(self, type: int, message: bytes, address: int):
+        frame = Frame(type, message, self.address, address)
+        dest = address
+
+        # If the frame is a routing request, we shuold put the destionation to
+        # broadcast
+        if type == Frame.FRAME_TYPES['routing_request']:
+            dest = 0xffff
+
+        # If the request isnt a broadcast or a routing request, check what the
+        # destionation should be
+        elif address != 0xffff and type != Frame.FRAME_TYPES['routing_response']:
+            dest = self.routing_controller.get_route(address)
+
+        # If destination is unkown, put it back on the queue
+        if dest == -1:
+            self.send_message(type, message, address)
+            return
 
         logger(f'sending frame {frame.__dict__}', channel='send_message')
-        self.e220.send(addr.to_bytes(2, 'big'), self.crc.encode(frame.serialize()))
+        self.e220.send(dest.to_bytes(2, 'big'),
+                       self.crc.encode(frame.serialize()))
 
     def _decode_message(self, message: bytes):
         rssi = 1
 
-        if cfg.rssi_enabled:
+        if cfg.rssi_enabled:  # type: ignore
             rssi = - (256 - message[-1])
             message = message[:-1]
 

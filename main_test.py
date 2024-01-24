@@ -17,9 +17,9 @@ sensors = I2CSensorFactory.create_sensors(i2c)
 
 ### CONNECT STORAGE CONTROLLER #####
 sc = StorageControllerFactory.get_controller(
-    mosi=Pin(7), 
-    miso=Pin(0), 
-    sck=Pin(6), 
+    mosi=Pin(7),
+    miso=Pin(0),
+    sck=Pin(6),
     cs=Pin(1, Pin.OUT)
 )
 
@@ -42,7 +42,7 @@ node_config = NodeConfigData(
 logger.set_channel('recieved_message', True)
 logger.set_channel('send_message', True)
 logger.set_channel('measurement', False)
-logger.set_channel('routing', False)
+logger.set_channel('routing', True)
 
 
 ##### START NODE #####
@@ -50,7 +50,7 @@ logger.set_channel('routing', False)
 loop = asyncio.get_event_loop()
 
 
-try: 
+try:
     # create node and loop in try except block to catch keyboard interrupt\
     # this way we can stop everything
     node = Node(
@@ -67,4 +67,3 @@ except KeyboardInterrupt:
 except Exception as e:
     logger((e,), channel='error')
     raise e
-

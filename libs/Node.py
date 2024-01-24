@@ -1,18 +1,20 @@
 from libs.controllers.timekeeping.RTCTimekeepingController import RTCTimekeepingController
+from libs.controllers.neighbours import NeighboursController
 from libs.controllers.config import ConfigController, NodeConfigData
-from libs.controllers.network.E220NetworkController import Frame
+from libs.controllers.network import Frame
 from libs.controllers.measurement.Measurement import Measurement
 from libs.controllers.database.BinaryKV import BinarKVDatabase
 from libs.controllers.measurement import MeasurementController
 from libs.controllers.replication import ReplicationController
 from libs.controllers.database.CsvDatabase import CsvDatabase
-from libs.controllers.neighbours import NeighboursController
+from libs.controllers.network.routing import RoutingController
 from libs.controllers.network import INetworkController
 from libs.controllers.storage import IStorageController
 from libs.external.ChannelLogger import logger
 from libs.sensors import ISensor
 
 import time
+
 
 class Node():
 
@@ -38,10 +40,14 @@ class Node():
         # setup network and routing related controllers
         self.network_controller = network_controller
         self.neighbours_controller = NeighboursController(
-            config_controller=self.config_controller, 
+            config_controller=self.config_controller,
             network=network_controller
         )
-        
+        self.routing_controller = RoutingController(
+            self.neighbours_controller, network_controller)
+
+        # TODO: Fix this with a different method
+        self.network_controller.routing_controller = self.routing_controller  # type: ignore
 
         # setup measurement related controllers
         self.timekeeping_controller = RTCTimekeepingController()
@@ -52,11 +58,10 @@ class Node():
                 lambda m: logger((type(m), str(m)), channel='measurement'),  # log the measurement
                 lambda measurement: self.store_measurement(measurement),     # store the measurement
                 lambda measurement: network_controller.send_message(        # broadcast the measurement
-                    Frame.FRAME_TYPES['measurement'], 
+                    Frame.FRAME_TYPES['measurement'],
                     measurement.encode()
                 )
             ])
-
 
         self.replication_controller = ReplicationController(self.config_controller)
 
@@ -76,7 +81,13 @@ class Node():
             Frame.FRAME_TYPES['config']: [self.config_controller.handle_message],
             Frame.FRAME_TYPES['measurement']: [self.store_measurement_frame],
             Frame.FRAME_TYPES['replication']: [self.replication_controller.handle_bid],
-            Frame.FRAME_TYPES['discovery']: [lambda _: self.config_controller.broadcast_config()],            
+            Frame.FRAME_TYPES['discovery']: [lambda _: self.config_controller.broadcast_config()],
+        })
+
+        # routing callbacks
+        self.network_controller.register_callbacks({
+            Frame.FRAME_TYPES['routing_request']: [self.routing_controller.handle_routing_request],
+            Frame.FRAME_TYPES['routing_response']: [self.routing_controller.handle_routing_response],
         })
 
         # extra callbacks
@@ -89,11 +100,12 @@ class Node():
             ],
         })
 
-        logger('Node has been initialized. starting', channel='info')    
+        logger('Node has been initialized. starting', channel='info')
 
         self.measurement_controller.start(node_config.measurement_interval)
         self.neighbours_controller.start()
         self.network_controller.start()
+        self.routing_controller.start()
 
         logger('Node has been started. Broadcasting config', channel='info')
 
@@ -105,7 +117,7 @@ class Node():
         all_callbacks = []
         for i in self.network_controller.callbacks.values():
             all_callbacks.extend(i)
-            
+
         info = {
             'address': self.network_controller.address,
             'requested_replications': self.config_controller.config.replication_count,
@@ -118,11 +130,9 @@ class Node():
         for key, val in info.items():
             logger(f'\t {key}: {val}', channel='info')
 
-
-
     def print_message_received(self, frame: Frame):
         logger(
-            f'received a message of type {frame.type} from node {frame.source_address} for node {frame.destination_address}: {frame.data} (rssi: {frame.rssi})', 
+            f'received a message of type {frame.type} from node {frame.source_address} for node {frame.destination_address}: {frame.data} (rssi: {frame.rssi})',
             channel='recieved_message'
         )
 
@@ -131,7 +141,7 @@ class Node():
         if frame.source_address not in self.replication_controller.config_controller.ledger:
             # send a discovery message
             self.network_controller.send_message(
-                Frame.FRAME_TYPES['discovery'], 
+                Frame.FRAME_TYPES['discovery'],
                 b'',
                 frame.source_address
             )
@@ -164,4 +174,3 @@ class Node():
 
         # close the database controller
         del self.database_controller
-        
