@@ -71,6 +71,7 @@ class E220NetworkController(INetworkController):
         self.e220.send(dest.to_bytes(2, 'big'),
                        self.crc.encode(frame.serialize()))
         
+        print('message_send')
         # check if it needs an aknowledgement
         if  address != 0xffff and \
             type != Frame.FRAME_TYPES['routing_response'] and \

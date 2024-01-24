@@ -72,14 +72,12 @@ class INetworkController:
     killed = False
 
     def _thread(self):
-        loop = asyncio.new_event_loop()
         while True and not self.killed:
             if len(self.queue) > 0:
                 type, message, addr = self.queue.pop(0)
                 self._send_message(type, message, addr)
             else:
                 time.sleep(0.001)
-        loop.close()
 
     def _send_message(self, type: int, message: bytes, addr):
         """ send a message to the specified address """
