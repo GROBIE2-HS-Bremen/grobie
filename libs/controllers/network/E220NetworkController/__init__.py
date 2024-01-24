@@ -59,8 +59,8 @@ class E220NetworkController(INetworkController):
 
         # If the request isnt a broadcast or a routing request, check what the
         # destionation should be
-        elif address != 0xffff and type != Frame.FRAME_TYPES['routing_response']:
-            dest = self.routing_controller.get_route(address)
+        # elif address != 0xffff and type != Frame.FRAME_TYPES['routing_response']:
+        #     dest = self.routing_controller.get_route(address)
 
         # If destination is unkown, put it back on the queue
         if dest == -1:
@@ -75,23 +75,25 @@ class E220NetworkController(INetworkController):
         # check if it needs an aknowledgement
         if  address != 0xffff and \
             type != Frame.FRAME_TYPES['routing_response'] and \
-            type != Frame.FRAME_TYPES['routing_request']:
+            type != Frame.FRAME_TYPES['routing_request'] and \
+            type != Frame.FRAME_TYPES['acknowledgement']:
 
             async def readd_msg():
+                await asyncio.sleep(1)
                 print('not aknowledged. resending')
                 self.send_message(type, message, address)     
 
             # create a hash for the message based on the address and the type 
             # of the message
             
-            hash = hashlib.md5(umsgpack.dumps({
+            hash = hashlib.sha1(umsgpack.dumps({
                 'source': frame.source_address,
                 'type': frame.type,
                 'destination': frame.destination_address,
-                'data': message
+                'data': frame.data
             })).digest()
 
-            handle = asyncio.get_event_loop().call_later(1, readd_msg) 
+            handle = asyncio.get_event_loop().create_task(readd_msg())
             self.acknowledgements[hash] = handle
 
     def _decode_message(self, message: bytes):

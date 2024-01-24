@@ -14,6 +14,7 @@ class Frame:
         'measurement':      0x01,
         'config':           0x02,
         'replication':      0x03,
+        'acknowledgement':  0x04,
         'node_joining':     0x06,
         'node_leaving':     0x07,
         'node_alive':       0x08,
@@ -128,21 +129,22 @@ class INetworkController:
             return
         
         if frame.type == Frame.FRAME_TYPES['acknowledgement'] and frame.destination_address == self.address:
-            hash = frame.data
+            print('acknowledged')
+            hash = b"" + frame.data
             if hash in self.acknowledgements:
                 self.acknowledgements[hash].cancel()
                 del self.acknowledgements[hash]
-                print('acknowledged')
-                return
+            return
             
         # check if we shoudl aknowledge the message. not broadcast, not routing, not ack, 
         if frame.destination_address != 0xffff: 
-            hash = hashlib.md5(umsgpack.dumps({
+            hash = hashlib.sha1(umsgpack.dumps({
                 'source': frame.source_address,
                 'type': frame.type,
                 'destination': frame.destination_address,
-                'data': message
+                'data': b"" + frame.data
             })).digest()
+
             self.send_message(Frame.FRAME_TYPES['acknowledgement'], hash, frame.source_address)
 
         # Don't allow direct messaging between some nodes.
