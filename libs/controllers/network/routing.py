@@ -38,7 +38,8 @@ class RoutingController:
             for i in self.request_list:
                 if self.request_list[i] + self.timeout < time():
                     del self.request_list[i]
-                    del self.routing_table[i]
+                    if i in self.routing_table:
+                        del self.routing_table[i]
 
             await asyncio.sleep(self.timeout // 4)
 
