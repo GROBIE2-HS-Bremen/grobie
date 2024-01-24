@@ -75,8 +75,8 @@ class INetworkController:
     def _thread(self):
         while True and not self.killed:
             if len(self.queue) > 0:
-                type, message, addr = self.queue.pop(0)
-                self._send_message(type, message, addr)
+                type, message, addr, attempts = self.queue.pop(0)
+                self._send_message(type, message, addr, attempts)
             else:
                 time.sleep(0.001)
 
