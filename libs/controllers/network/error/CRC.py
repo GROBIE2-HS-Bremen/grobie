@@ -2,6 +2,7 @@ from libs.external.reedsolo import *
 
 import array
 
+
 class CRC:
     def __init__(self):
         self.corrector = RSCodec(5)
@@ -12,14 +13,14 @@ class CRC:
         crc = c
         for j in range(8):
             if crc & 0x01:
-                crc = (crc >> 1) ^ 0xA001
+                crc = (crc >> 1) ^ 0x8408
             else:
                 crc = crc >> 1
 
         return crc
 
     def checksum(self, data: bytes) -> bytes:
-        crc = 0xFFFF
+        crc = 0x0000
         for c in data:
             crc = (crc >> 8) ^ self.table[(crc ^ c) & 0xFF]
 
@@ -48,7 +49,7 @@ class CRC:
         except reedsolo.ReedSolomonError:
             return None
 
-# Testing
+# # Testing
 # crc = CRC()
 #
 # # Encode data
