@@ -48,10 +48,7 @@ class E220NetworkController(INetworkController):
             await asyncio.sleep(0.1)
 
 
-    def _send_message(self, type: int, message: bytes, address: int, rem_attempts: int):
-        if rem_attempts == 0:
-            return
-    
+    def _send_message(self, type: int, message: bytes, address: int):
         frame = Frame(type, message, self.address, address)
         dest = address
 
@@ -93,7 +90,7 @@ class E220NetworkController(INetworkController):
             async def readd_msg():
                 await asyncio.sleep(1)
                 logger(f'aknowledgement not received for {hash}', channel='aknowledge')
-                self.send_message(type, message, address, rem_attempts - 1)     
+                self.send_message(type, message, address)     
 
             handle = asyncio.get_event_loop().create_task(readd_msg())
             self.acknowledgements[hash] = handle

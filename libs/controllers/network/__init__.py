@@ -75,8 +75,8 @@ class INetworkController:
     def _thread(self):
         while True and not self.killed:
             if len(self.queue) > 0:
-                type, message, addr, attempts = self.queue.pop(0)
-                self._send_message(type, message, addr, attempts)
+                type, message, addr = self.queue.pop(0)
+                self._send_message(type, message, addr)
             else:
                 time.sleep(0.001)
 
@@ -96,9 +96,9 @@ class INetworkController:
         self.task.cancel()
         self.killed = True
 
-    def send_message(self, type: int, message: bytes, addr=0xffff, attempts=3):
+    def send_message(self, type: int, message: bytes, addr=0xffff):
         """ send a message to the specified address """
-        self.queue.append((type, message, addr, attempts))
+        self.queue.append((type, message, addr))
 
     def register_callback(self, addr: int, callback):
         """ register a callback for the specified address """
@@ -114,7 +114,7 @@ class INetworkController:
                 self.register_callback(frame_type, callback)
 
     acknowledgements = {}
-    def on_message(self, message: bytes, rem_attempts: int = 3):
+    def on_message(self, message: bytes):
         """ called when a message is received """
         frame = self._decode_message(message)
 
@@ -125,7 +125,7 @@ class INetworkController:
         if frame.type not in [Frame.FRAME_TYPES['routing_request'], Frame.FRAME_TYPES['routing_response']] and frame.destination_address != self.address and frame.destination_address != 0xffff:
             logger(
                 f'Got data for a different node, ignoring and pushing on queue', channel='routing')
-            self.send_message(frame.type, frame.data, frame.destination_address, rem_attempts)
+            self.send_message(frame.type, frame.data, frame.destination_address)
             return
         
         if frame.type == Frame.FRAME_TYPES['acknowledgement'] and frame.destination_address == self.address:
@@ -145,7 +145,7 @@ class INetworkController:
                 'data': b"" + frame.data
             })).digest()
 
-            self.send_message(Frame.FRAME_TYPES['acknowledgement'], hash, frame.source_address, rem_attempts)
+            self.send_message(Frame.FRAME_TYPES['acknowledgement'], hash, frame.source_address)
 
         # Don't allow direct messaging between some nodes.
         # if self.address != 0x00a2 and frame.source_address != 0x00a2:
