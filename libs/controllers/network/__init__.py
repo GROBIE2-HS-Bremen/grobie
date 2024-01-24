@@ -114,7 +114,7 @@ class INetworkController:
                 self.register_callback(frame_type, callback)
 
     acknowledgements = {}
-    def on_message(self, message: bytes):
+    def on_message(self, message: bytes, rem_attempts: int = 3):
         """ called when a message is received """
         frame = self._decode_message(message)
 
@@ -125,11 +125,11 @@ class INetworkController:
         if frame.type not in [Frame.FRAME_TYPES['routing_request'], Frame.FRAME_TYPES['routing_response']] and frame.destination_address != self.address and frame.destination_address != 0xffff:
             logger(
                 f'Got data for a different node, ignoring and pushing on queue', channel='routing')
-            self.send_message(frame.type, frame.data, frame.destination_address)
+            self.send_message(frame.type, frame.data, frame.destination_address, rem_attempts)
             return
         
         if frame.type == Frame.FRAME_TYPES['acknowledgement'] and frame.destination_address == self.address:
-            print('acknowledged')
+            logger(f'aknowledgement received for {frame.data}', channel='aknowledge')
             hash = b"" + frame.data
             if hash in self.acknowledgements:
                 self.acknowledgements[hash].cancel()
@@ -145,7 +145,7 @@ class INetworkController:
                 'data': b"" + frame.data
             })).digest()
 
-            self.send_message(Frame.FRAME_TYPES['acknowledgement'], hash, frame.source_address)
+            self.send_message(Frame.FRAME_TYPES['acknowledgement'], hash, frame.source_address, rem_attempts)
 
         # Don't allow direct messaging between some nodes.
         # if self.address != 0x00a2 and frame.source_address != 0x00a2:

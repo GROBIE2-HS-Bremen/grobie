@@ -43,6 +43,7 @@ logger.set_channel('recieved_message', True)
 logger.set_channel('send_message', True)
 logger.set_channel('measurement', False)
 logger.set_channel('routing', True)
+logger.set_channel('aknowledge', True)
 
 
 ##### START NODE #####

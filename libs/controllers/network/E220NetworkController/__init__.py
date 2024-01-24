@@ -48,7 +48,10 @@ class E220NetworkController(INetworkController):
             await asyncio.sleep(0.1)
 
 
-    def _send_message(self, type: int, message: bytes, address: int):
+    def _send_message(self, type: int, message: bytes, address: int, rem_attempts: int):
+        if rem_attempts == 0:
+            return
+    
         frame = Frame(type, message, self.address, address)
         dest = address
 
@@ -71,17 +74,11 @@ class E220NetworkController(INetworkController):
         self.e220.send(dest.to_bytes(2, 'big'),
                        self.crc.encode(frame.serialize()))
         
-        print('message_send')
         # check if it needs an aknowledgement
         if  address != 0xffff and \
             type != Frame.FRAME_TYPES['routing_response'] and \
             type != Frame.FRAME_TYPES['routing_request'] and \
             type != Frame.FRAME_TYPES['acknowledgement']:
-
-            async def readd_msg():
-                await asyncio.sleep(1)
-                print('not aknowledged. resending')
-                self.send_message(type, message, address)     
 
             # create a hash for the message based on the address and the type 
             # of the message
@@ -92,6 +89,11 @@ class E220NetworkController(INetworkController):
                 'destination': frame.destination_address,
                 'data': frame.data
             })).digest()
+
+            async def readd_msg():
+                await asyncio.sleep(1)
+                logger(f'aknowledgement not received for {hash}', channel='aknowledge')
+                self.send_message(type, message, address, rem_attempts - 1)     
 
             handle = asyncio.get_event_loop().create_task(readd_msg())
             self.acknowledgements[hash] = handle
