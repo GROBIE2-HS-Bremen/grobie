@@ -96,9 +96,9 @@ class INetworkController:
         self.task.cancel()
         self.killed = True
 
-    def send_message(self, type: int, message: bytes, addr=0xffff):
+    def send_message(self, type: int, message: bytes, addr=0xffff, attempts=3):
         """ send a message to the specified address """
-        self.queue.append((type, message, addr))
+        self.queue.append((type, message, addr, attempts))
 
     def register_callback(self, addr: int, callback):
         """ register a callback for the specified address """
