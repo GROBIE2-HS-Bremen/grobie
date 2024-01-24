@@ -133,6 +133,7 @@ class INetworkController:
             hash = frame.data
             if hash in self.acknowledgements:
                 self.acknowledgements[hash].cancel()
+                del self.acknowledgements[hash]
                 print('acknowledged')
                 return
             
